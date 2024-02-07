@@ -2,6 +2,8 @@ import requests
 import json
 from geopy.geocoders import Nominatim
 
+# wow brian is the coolest mentor!
+
 outputDecoder = json.decoder.JSONDecoder
 
 geoLocator = Nominatim(user_agent="notam_sort")
