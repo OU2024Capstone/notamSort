@@ -2,53 +2,62 @@ import requests
 import json
 from geopy.geocoders import Nominatim
 
-outputDecoder = json.decoder.JSONDecoder
+notamList = []
 
-geoLocator = Nominatim(user_agent="notam_sort")
+# call me to populate and return the notam list
+def getNotams(depAP, arrAP) :
+    # do some sanitization on the input strings
+    geoLocator = Nominatim(user_agent="notam_sort")
+    depAP = geoLocator.geocode(depAP)
+    arrAP = geoLocator.geocode(arrAP)
 
-creds = {
-    "client_id" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "client_secret" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-}
+    # read these from a file then add to .gitignore
+    # this can be called anywhere doesnt have to be in the function call here
+    creds = {
+        "client_id" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "client_secret" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    }
 
-# get user input here
-depAP = geoLocator.geocode("JFK")
-arrAP = geoLocator.geocode("DFW")
+    input = {
+        "pageSize" : "100",
+        "pageNum" : "1",
+        "locationLongitude" : str(depAP.longitude),
+        "locationLatitude" : str(depAP.latitude),
+        "locationRadius" : "25",
+    }
 
-input = {
-    "pageSize" : "100",
-    "pageNum" : "1",
-    "locationLongitude" : str(depAP.longitude),
-    "locationLatitude" : str(depAP.latitude),
-    "locationRadius" : "25",
-}
+    result = requests.get(url="https://external-api.faa.gov/notamapi/v1/notams", params=input , headers=creds)
+    output = result.text
+    status = result.status_code
+    #print(output)
 
+    if status != 200 :
+        print("fail")
+        raise Exception("bad return code")
 
-result = requests.get(url="https://external-api.faa.gov/notamapi/v1/notams", params=input , headers=creds)
-output = result.text
-status = result.status_code
-#print(output)
+    # turn the returned json into a dictionary
+    dataDict = json.loads(output)
 
-if status != 200 :
-    print("fail")
-    raise Exception("bad return code")
+    # gets a list of notams the size of the page / number of notams
+    notamNum = dataDict.get("pageSize")
+    pageNum = dataDict.get("pageNum")
+    notamData = dataDict.get("items")
 
-outputFile = open("output.json", "w")
-outputFile.write(output)
-outputFile.close
+    for i in range(notamNum) :
+        curNotam = notamData[i]
+        curNotamProperties = curNotam.get("properties").get("coreNOTAMData").get("notam")
+        curNotamText = curNotamProperties.get("text")
+        notamList.append(curNotamText)
+    
+    return notamList
 
-outputFile = open("output.json", "r")
-dataDict = json.load(outputFile)
-outputFile.close()
+# probably doesnt work because the notam list isnt built
+def saveToFile(outputFileName) :
+    outputFile = open(outputFileName+".json", "w")
+    for notam in notamList :
+        outputFile.write(notam)
+    outputFile.close()
 
-notamNum = dataDict.get("pageSize")
-pageNum = dataDict.get("pageNum")
-# gets a list of notams the size of the pageSize
-notamData = dataDict.get("items")
-
-for i in range(notamNum) :
-    curNotam = notamData[i]
-    curNotamProperties = curNotam.get("properties").get("coreNOTAMData").get("notam")
-    curNotamText = curNotamProperties.get("text")
-    print(curNotamText)
-    print()
+#getNotams("jfk", "dfw")
+#saveToFile("output")
+#print(notamList[1])
