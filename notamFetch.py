@@ -1,14 +1,20 @@
 import requests
 import json
+import os
 from geopy.geocoders import Nominatim
+from dotenv import load_dotenv
+
+# load in env files
+load_dotenv()
 
 outputDecoder = json.decoder.JSONDecoder
 
 geoLocator = Nominatim(user_agent="notam_sort")
 
+# credentials retrieved from external '.env' file located in root dir
 creds = {
-    "client_id" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "client_secret" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "client_id": os.getenv('client_id'),
+    "client_secret": os.getenv('client_secret'),
 }
 
 # get user input here
