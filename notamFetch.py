@@ -19,7 +19,8 @@ def get_notams(departure_airport, arrival_airport) :
         "client_secret" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     }
 
-    faa_api_input = {
+    # First, get the depature airport notams
+    faa_api_input_depature = {
         "pageSize" : "100",
         "pageNum" : "1",
         "locationLongitude" : str(departure_airport_location.longitude),
@@ -27,7 +28,7 @@ def get_notams(departure_airport, arrival_airport) :
         "locationRadius" : "25",
     }
 
-    api_result = requests.get(url=faa_api, params=faa_api_input , headers=credentials)
+    api_result = requests.get(url=faa_api, params=faa_api_input_depature , headers=credentials)
     api_output = api_result.text
     api_status = api_result.status_code
 
@@ -51,6 +52,38 @@ def get_notams(departure_airport, arrival_airport) :
         full_notam_list.append(current_notam_text)
     
     
+    # Now, get the arrival airport notams
+    faa_api_input_arrival = {
+        "pageSize" : "100",
+        "pageNum" : "1",
+        "locationLongitude" : str(arrival_airport_location.longitude),
+        "locationLatitude" : str(arrival_airport_location.latitude),
+        "locationRadius" : "25",
+    }
+
+    api_result = requests.get(url=faa_api, params=faa_api_input_arrival, headers=credentials)
+    api_output = api_result.text
+    api_status = api_result.status_code
+
+    if api_status != 200:
+        print("fail")
+        raise Exception("bad return code")
+
+    # Convert returned json into a dictionary    
+    arrival_airport_notam_dict = json.loads(api_output)
+
+    # Get the number of notams on each page as well as the total number of pages
+    num_notams = arrival_airport_notam_dict.get("pageSize")
+    num_pages = arrival_airport_notam_dict.get("pageNum")
+    arrival_notam_list = arrival_airport_notam_dict.get("items")
+
+    for i in range(num_notams):
+        current_notam = arrival_notam_list[i]
+        # Gather important information about this notam
+        current_notam_properties = current_notam.get("properties").get("coreNOTAMData").get("notam")
+        current_notam_text = current_notam_properties.get("text")
+        full_notam_list.append(current_notam_text)
+
 
     return full_notam_list
 
