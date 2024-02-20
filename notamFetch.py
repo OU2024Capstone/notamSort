@@ -37,7 +37,6 @@ def get_notams(departure_airport, arrival_airport) :
     api_output = api_result.text
     api_status = api_result.status_code
 
-
     if api_status != 200 :
         print("fail")
         raise Exception("bad return code")
@@ -65,3 +64,8 @@ def save_to_file(output_file_name) :
     for notam in full_notam_list :
         output_file.write(notam)
     output_file.close()
+
+# For testing purposes, this function will output any list of notams it is given.
+def print_to_console(notam_list):
+    for notam in notam_list:
+        print(notam)
