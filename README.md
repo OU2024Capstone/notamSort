@@ -27,8 +27,8 @@ pip install -r requirements.txt
 ## Creating .env file
 
 For purposes of having using FAA API, users must utilize their own API keys in a seperate .env file </br>
-This can be done by creating a .env file in the root directory </br>
-Inside the file place the following script: </br>
+This can be done by creating a file with the name ".env" in the root directory </br>
+Inside this file, place the following script: </br>
 
 ```
 client_id = "[insert client ID]"
