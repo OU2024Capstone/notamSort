@@ -1,11 +1,34 @@
 import requests
 import json
 import os
+import sys
 from geopy.geocoders import Nominatim
 from dotenv import load_dotenv
 
-# load in env files
+# Querying the FAA NOTAM API requires authorization. There are two components
+# required--a client_id and a client_secret. We store these values in a .env
+# file in the root directory. If running locally, it is required to set up
+# these credentials in the .env file manually.
+if not os.path.exists('.env'):
+    raise FileNotFoundError('.env file not found in root directory. Have you set up a .env file for credentials?')
+
 load_dotenv()
+
+client_id = os.getenv('client_id')
+client_secret = os.getenv('client_secret')
+
+missing_auth = []
+if not client_id:
+    missing_auth.append( "client_id" )
+if not client_secret:
+    missing_auth.append( "client_secret" )
+if missing_auth:
+    raise RuntimeError( f"Missing required authorization credential(s) {', '.join( missing_auth )} in .env file! Have you set up your credentials locally?" )
+
+FAA_AUTH = {
+    "client_id": client_id,
+    "client_secret": client_secret,
+}
 
 full_notam_list = []
 faa_api = "https://external-api.faa.gov/notamapi/v1/notams"
@@ -17,14 +40,6 @@ def get_notams(departure_airport, arrival_airport) :
     departure_airport_location = geolocator.geocode(departure_airport)
     arrival_airport_location = geolocator.geocode(arrival_airport)
 
-    # read these from a file then add to .gitignore
-    # this can be called anywhere doesnt have to be in the function call here
-    # credentials retrieved from external '.env' file located in root dir
-    credentials = {
-        "client_id": os.getenv('client_id'),
-        "client_secret": os.getenv('client_secret'),
-    }
-
     faa_api_input = {
         "pageSize" : "100",
         "pageNum" : "1",
@@ -33,7 +48,7 @@ def get_notams(departure_airport, arrival_airport) :
         "locationRadius" : "25",
     }
 
-    api_result = requests.get(url=faa_api, params=faa_api_input , headers=credentials)
+    api_result = requests.get(url=faa_api, params=faa_api_input , headers=FAA_AUTH)
     api_output = api_result.text
     api_status = api_result.status_code
 
