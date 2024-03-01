@@ -4,7 +4,7 @@ import os
 import sys
 from geopy.geocoders import Nominatim
 from dotenv import load_dotenv
-import Notam
+from Notam import Notam
 
 
 # Querying the FAA NOTAM API requires authorization. There are two components
@@ -84,10 +84,10 @@ def send_api_request(request_latitude_longitude : dict) -> list:
 
     # Get all of the notams and place them inside of notam list.
     for notam in returned_notam_list:
-        
-        current_notam_properties = notam.get("properties").get("coreNOTAMData").get("notam")
-        current_notam_text = current_notam_properties.get("text")
-        notam_list.append(current_notam_text)
+        # Create a Notam object and append to the notam list. The Notam
+        # class contains constants to get specific properties from the 
+        # FAA api easily.
+        notam_list.append(Notam(notam))
     
     print(f"Found {len(notam_list)} notams at {request_latitude_longitude}")
 
