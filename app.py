@@ -1,5 +1,6 @@
 from flask import Flask, request
 from flask import render_template
+import notamFetch
 app = Flask(__name__)
 #import notamFetch
 
@@ -14,7 +15,8 @@ def home():
 @app.route('/query/', methods = ['POST', 'GET'])
 def query():
     if request.method == 'POST':
-        #notamFetch.getNotams(depAP, arrAP)
+        # print(*notamFetch.get_all_notams(request.form['DepartureAirport'], request.form['ArrivalAirport']), sep='')
+
         return render_template('query.html', 
                 DepartureAirport = request.form['DepartureAirport'], 
                 ArrivalAirport = request.form['ArrivalAirport'])
