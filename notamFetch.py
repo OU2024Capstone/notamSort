@@ -46,10 +46,16 @@ credentials = {
     "client_secret": os.getenv('client_secret'),
 }
 
-def send_api_request(request_latitude_longitude : dict) -> list:
-    """ This function takes the notam request, requests the api for the notams, and then returns the output.
+def send_api_request(request_latitude_longitude : dict, additional_params={}) -> list:
+    """ This function takes the notam request, requests the api for the notams,
+    and then returns the list of notams.
 
-    request_latitude_longitude expects to be a dict object containing the keys 'latitude' and 'longitude' and contain type float values
+    request_latitude_longitude expects to be a dict object containing the keys
+    'latitude' and 'longitude' and contain type float values
+
+    If you wish to pass additional HTTP parameters to the FAA API, add them to
+    the dict additional_params. Note that any params with the same key will
+    overwrite existing params.
     """
     
     # This is our request template
@@ -61,24 +67,30 @@ def send_api_request(request_latitude_longitude : dict) -> list:
         "locationRadius" : "25",
     }
 
-    api_result = requests.get(url=faa_api, params=notam_request_parameters, headers=credentials)
-    api_output = api_result.text
-    api_status = api_result.status_code
+    notam_request_parameters.update( additional_params )
 
+    api_response = requests.get(url=faa_api, params=notam_request_parameters, headers=credentials)
 
-    # Code 200 indicates that the request occured successfully,
-    # if it's not 200 something went wrong.
-    if api_status != 200 :
-        print("fail")
-        raise Exception("bad return code")
-    
+    if api_response.status_code == 401:
+        raise RuntimeError( f"HTTP 401 return code from FAA API. Are you authenticated?" )
+    if api_response.status_code == 404:
+        raise RuntimeError( f"HTTP 404 return code from FAA API. Has the URL moved? Accessed url \"{faa_api}\"" )
+    if api_response.status_code != 200:
+        raise RuntimeError( f"Received non-HTTP 200 status code {api_response.status_code} from FAA API" )
 
-    request_notam_dict = json.loads(api_output)
+    api_response_json = json.loads(api_response.text)
+
+    # The FAA API often does not follow good HTTP response code practices. For
+    # example, instead of returning an HTTP 400 Bad Request, the API will
+    # respond with HTTP 200 but include a single message about what was wrong.
+    # In these cases, we want to ensure that we fail appropriately.
+    if "message" in api_response_json.keys() and len(api_response_json.keys()) == 1:
+        raise RuntimeError( f"Received error message from FAA API: {api_response_json['message']}" )
 
     # Parsing data about dictionary.
-    num_notams = request_notam_dict.get("pageSize")
-    num_pages = request_notam_dict.get("pageNum")
-    returned_notam_list = request_notam_dict.get("items")
+    num_notams = api_response_json.get("pageSize")
+    num_pages = api_response_json.get("pageNum")
+    returned_notam_list = api_response_json.get("items")
 
     notam_list = []
 
