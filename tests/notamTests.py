@@ -11,7 +11,14 @@ class TestNotams(unittest.TestCase) :
 
     ## Tests involving valid airports:
 
-    # Check two close airports in the continental US        
+    # Check two close airports in the continental US
+
+    def test_close(self) :
+        try:
+            notamFetch.get_all_notams("MCI", "OKC")
+        except Exception as err:
+            self.fail("Airport was not located when it should have been.")
+        pass
 
     # Check two far airports in the continental US
 
