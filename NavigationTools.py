@@ -173,7 +173,10 @@ def get_next_point_manual(point: PointObject, bearing: float, distance: float) -
     if not(isinstance(bearing, float)) :
         error_log.append(f"Error: bearing is of the wrong type, expected float and got {type(bearing)}")
     if not(isinstance(distance, float)) :
-        error_log.append(f"Error: distance is of the wrong type, expected float and got {type(distance)}")
+        if (isinstance(distance, int)) :
+            distance = float(distance)
+        else :
+            error_log.append(f"Error: distance is of the wrong type, expected float or int and got {type(distance)}")
 
     if error_log :
         error_message = "\n".join(error_log)

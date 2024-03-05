@@ -170,7 +170,7 @@ def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: 
     # we could divide the distance by some max number of api calls instead
     middle_notams = []
     current_point = point_one
-    for i in range(0, (total_distance-spacing), spacing) :
+    for i in range(0, (int(total_distance)-spacing), spacing) :
         next_point = get_next_point_manual(current_point, bearing, spacing)
         middle_notams.append(get_notams_at(next_point))
         current_point = next_point
