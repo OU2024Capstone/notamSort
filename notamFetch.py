@@ -172,7 +172,7 @@ def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: 
     current_point = point_one
     for i in range(0, int((total_distance)-spacing), int(spacing)) :
         next_point = get_next_point_manual(current_point, bearing, spacing)
-        middle_notams.append(get_notams_at(next_point))
+        middle_notams += get_notams_at(next_point)
         current_point = next_point
     return middle_notams
 
