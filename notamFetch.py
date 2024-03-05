@@ -6,7 +6,7 @@ from geopy.geocoders import Nominatim
 from dotenv import load_dotenv
 from Notam import Notam
 import NotamSort
-
+from NavigationTools import *
 
 # Querying the FAA NOTAM API requires authorization. There are two components
 # required--a client_id and a client_secret. We store these values in a .env
@@ -33,11 +33,11 @@ FAA_AUTH = {
     "client_secret": client_secret,
 }
 
-full_notam_list = []
 faa_api = "https://external-api.faa.gov/notamapi/v1/notams"
+# spacing between the center of our notam requests in nautical miles
+DEFAULT_PATH_STEP_SIZE_NM = 40
+
 GEOLOCATOR = Nominatim(user_agent="notam_sort")
-LAT_KEY = "latitude"
-LONG_KEY = "longitude"
 
 # read these from a file then add to .gitignore
 # this can be called anywhere doesnt have to be in the function call here
@@ -47,24 +47,22 @@ credentials = {
     "client_secret": os.getenv('client_secret'),
 }
 
-def send_api_request(request_latitude_longitude : dict, additional_params={}) -> list:
-    """ This function takes the notam request, requests the api for the notams,
-    and then returns the list of notams.
 
-    request_latitude_longitude expects to be a dict object containing the keys
-    'latitude' and 'longitude' and contain type float values
-
-    If you wish to pass additional HTTP parameters to the FAA API, add them to
-    the dict additional_params. Note that any params with the same key will
-    overwrite existing params.
+def get_notams_at(request_location : PointObject) -> list:
+    """ 
+    This function takes the notam request, requests the api for the notams, and then returns the output.
+    request_latitude_longitude expects to be a PointObject object containing the parameters 'latitude' and 'longitude' and contain type float values
     """
+
+    if not(isinstance(request_location, PointObject)):
+        raise ValueError(f"Error: location is of invalid type, expected PointObject got {type(request_location)}")
     
     # This is our request template
     notam_request_parameters = {
         "pageSize" : "1000",
         "pageNum" : "1",
-        "locationLatitude" : str(request_latitude_longitude[LAT_KEY]),
-        "locationLongitude" : str(request_latitude_longitude[LONG_KEY]),
+        "locationLatitude" : str(request_location.latitude),
+        "locationLongitude" : str(request_location.longitude),
         "locationRadius" : "25",
     }
 
@@ -102,60 +100,14 @@ def send_api_request(request_latitude_longitude : dict, additional_params={}) ->
         # FAA api easily.
         notam_list.append(Notam(notam))
     
-    print(f"Found {len(notam_list)} notams at {request_latitude_longitude}")
+    print(f"Found {len(notam_list)} notams at {request_location}")
 
     return notam_list
 
 
-def get_notams_at(location: str | dict) -> list:
-    """Given either an airport code as str or a dictionary containing the 'latitude' and 'longitude' of the notam request,
-        this function returns a list of notams at that location.
-        
-
-        Several errors could be raised from this function:
-        
-        RuntimeError may occur if the inputted airport code is invalid.
-
-        TypeError may occur if the function recieves arguments that are not of type 'str' or 'dict'. 
-        May also occur if the dictionary keys 'latitude' or 'longitude' contain a value that is not of type 'float'
-        
-        KeyError may occur if the dictionary is missing either the 'latitude' or 'longitude' keys"""
-
-    if isinstance(location, str):
-
-        # Attempt to get the longitude and latitude of the airport.
-        airport_info = GEOLOCATOR.geocode(location)
-
-        # If the geolocator outputs None, then something has gone wrong.
-        if(airport_info is None):
-            raise RuntimeError(f"Invalid airport. {location} was not found.")
-
-        request_latitude_longitude = {LAT_KEY: airport_info.latitude, LONG_KEY: airport_info.longitude}
-            
-
-    elif isinstance(location, dict):
-
-        if(LAT_KEY in location.keys() and LONG_KEY in location.keys()):
-            
-            if(isinstance(location[LAT_KEY], float) and isinstance(location[LONG_KEY], float)):
-                request_latitude_longitude = location
-            
-            else:
-                raise TypeError(f"Latitude and Longitude expected type float, but got {type(location[LAT_KEY])} and {type(location[LONG_KEY])} instead.")
-
-        else:
-            raise KeyError("Dictionary keys are expected to be formatted as {" + f"'{LAT_KEY}': float, '{LONG_KEY}': float" + "}")
-
-    else:
-        raise TypeError(f"Unsupported input for location \"{location}\", expected type str or dict but got {type(location)} instead.")
-
-
-    return send_api_request(request_latitude_longitude)
-
-
-    # Currently returns the union of the depature and arrival airport notams.
-    # Looking to add in-flight notams and figure out a way to remove any intersecting notams.
-    # Additionally, the resulting list should be sorted.
+# Currently returns the union of the depature and arrival airport notams.
+# Looking to add in-flight notams and figure out a way to remove any intersecting notams.
+# Additionally, the resulting list should be sorted.
 def get_all_notams(departure_airport : str, arrival_airport : str) -> list:
     """This is the starting point for the program, the front end should call this function.
         From there, this function should call other functions to 
@@ -163,20 +115,76 @@ def get_all_notams(departure_airport : str, arrival_airport : str) -> list:
         get these notams sorted, and return the sorted list back to the front end."""
     
     sort_list = NotamSort.SimpleSort()
+    
+    error_log = []
+    if not(isinstance(departure_airport, str)) :
+        error_log.append(f"Error: departure_airport is of the wrong type, expected str and got {type(departure_airport)}")
+    if not(isinstance(arrival_airport, str)) :
+        error_log.append(f"Error: arrival_airport is of the wrong type, expected str and got {type(arrival_airport)}")
+    if error_log :
+        error_message = "\n".join(error_log)
+        raise ValueError(error_message)
+    
+    departure_point = PointObject.from_airport_code(departure_airport)
+    arrival_point = PointObject.from_airport_code(arrival_airport)
 
-    departure_airport_notams = get_notams_at(departure_airport)
+    departure_airport_notams = get_notams_at(departure_point)
+    arrival_airport_notams = get_notams_at(arrival_point)
 
-    arrival_airport_notams = get_notams_at(arrival_airport)
+    middle_notams = get_notams_between(departure_point, arrival_point, DEFAULT_PATH_STEP_SIZE_NM)
 
-    return sort_list.sort(departure_airport_notams + arrival_airport_notams)
+    full_notam_list = (
+        departure_airport_notams 
+        + arrival_airport_notams 
+        + middle_notams
+    )
+
+    return sort_list.sort(full_notam_list)
 
 
-# probably doesnt work because the notam list isnt built
-def save_to_file(output_file_name : str) :
-    output_file = open(output_file_name+".json", "w")
-    for notam in full_notam_list :
-        output_file.write(notam)
-    output_file.close()
+def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: float) -> list :
+    """
+    point_one: starting point
+    point_two: ending point
+    spacing: nautical miles between the center of each notam call
+
+    Returns a list of the notams between the 2 points, does not include the end points
+    """
+    error_log = []
+    if not(isinstance(point_one, PointObject)) :
+        error_log.append(f"Error: point_one is of the wrong type, expected PointObject and got {type(point_one)}")
+    if not(isinstance(point_two, PointObject)) :
+        error_log.append(f"Error: point_two is of the wrong type, expected PointObject and got {type(point_one)}")
+    if not(isinstance(spacing, float)) :
+        error_log.append(f"Error: spacing is of the wrong type, expected float and got {type(spacing)}")
+    if error_log :
+        error_message = "\n".join(error_log)
+        raise ValueError(error_message)
+
+    total_distance = get_distance(point_one, point_two)
+    
+    bearing = get_bearing(point_one, point_two)
+    
+    # i acts as our mile-marker along the flight path
+    # with a hard-coded spacing option we have issues with overlap around the end of the path
+    # we could divide the distance by some max number of api calls instead
+    middle_notams = []
+    current_point = point_one
+    for i in range(0, (total_distance-spacing), spacing) :
+        next_point = get_next_point_manual(current_point, bearing, spacing)
+        middle_notams.append(get_notams_at(next_point))
+        current_point = next_point
+    return middle_notams
+
+
+def save_to_file(output_file_name : str, notam_list: list) :
+    if notam_list :
+        output_file = open(output_file_name+".json", "w")
+        for notam in notam_list :
+            output_file.write(notam)
+        output_file.close()
+    else :
+        print("No Notams Retrieved Yet")
 
 # For testing purposes, this function will output any list of notams it is given.
 def print_to_console(notam_list : list):
