@@ -128,7 +128,7 @@ def get_bearing(point_one: PointObject, point_two: PointObject) -> float :
     return bearing
 
 
-def get_next_point_geopy(point: PointObject, bearing: float, distance: float) -> PointObject :
+def get_next_point_geopy(point: PointObject, bearing: float, distance: float| int) -> PointObject :
     """
     point: point from wich we start measuring distance
     distance: target distance from the start in nautical miles
@@ -141,8 +141,8 @@ def get_next_point_geopy(point: PointObject, bearing: float, distance: float) ->
         error_log.append(f"Error: point_one is of the wrong type, expected PointObject and got {type(point)}")
     if not(isinstance(bearing, float)) :
         error_log.append(f"Error: bearing is of the wrong type, expected float and got {type(bearing)}")
-    if not(isinstance(distance, float)) :
-        error_log.append(f"Error: distance is of the wrong type, expected float and got {type(distance)}")
+    if not(isinstance(distance, (float, int))) :
+        error_log.append(f"Error: distance is of the wrong type, expected float or int and got {type(distance)}")
 
     if error_log :
         error_message = "\n".join(error_log)
@@ -159,7 +159,7 @@ def get_next_point_geopy(point: PointObject, bearing: float, distance: float) ->
 # results confirmed by https://www.fcc.gov/media/radio/find-terminal-coordinates
 # both methods are off in the latitude by ~0.001 of the FCC calculator in different directions
 # we currently only use the geopy implementation to find the next point not this one
-def get_next_point_manual(point: PointObject, bearing: float, distance: float) -> PointObject :
+def get_next_point_manual(point: PointObject, bearing: float, distance: float | int) -> PointObject :
     """
     point: point from wich we start measuring distance
     bearing: heading in degrees
@@ -172,11 +172,8 @@ def get_next_point_manual(point: PointObject, bearing: float, distance: float) -
         error_log.append(f"Error: point_one is of the wrong type, expected PointObject and got {type(point)}")
     if not(isinstance(bearing, float)) :
         error_log.append(f"Error: bearing is of the wrong type, expected float and got {type(bearing)}")
-    if not(isinstance(distance, float)) :
-        if (isinstance(distance, int)) :
-            distance = float(distance)
-        else :
-            error_log.append(f"Error: distance is of the wrong type, expected float or int and got {type(distance)}")
+    if not(isinstance(distance, (float, int))) :
+        error_log.append(f"Error: distance is of the wrong type, expected float or int and got {type(distance)}")
 
     if error_log :
         error_message = "\n".join(error_log)
