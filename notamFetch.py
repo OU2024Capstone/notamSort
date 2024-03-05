@@ -5,6 +5,7 @@ import sys
 from geopy.geocoders import Nominatim
 from dotenv import load_dotenv
 from Notam import Notam
+import NotamSort
 
 
 # Querying the FAA NOTAM API requires authorization. There are two components
@@ -160,12 +161,14 @@ def get_all_notams(departure_airport : str, arrival_airport : str) -> list:
         From there, this function should call other functions to 
         retrieve depature and arrival airport notams as well as in-flight notams,
         get these notams sorted, and return the sorted list back to the front end."""
+    
+    sort_list = NotamSort.SimpleSort()
 
     departure_airport_notams = get_notams_at(departure_airport)
 
     arrival_airport_notams = get_notams_at(arrival_airport)
 
-    return departure_airport_notams + arrival_airport_notams
+    return sort_list.sort(departure_airport_notams + arrival_airport_notams)
 
 
 # probably doesnt work because the notam list isnt built
