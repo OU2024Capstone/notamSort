@@ -48,7 +48,7 @@ credentials = {
 }
 
 
-def get_notams_at(request_location : PointObject) -> list:
+def get_notams_at(request_location : PointObject, additional_params = {}) -> list:
     """ 
     This function takes the notam request, requests the api for the notams, and then returns the output.
     request_latitude_longitude expects to be a PointObject object containing the parameters 'latitude' and 'longitude' and contain type float values
@@ -142,7 +142,7 @@ def get_all_notams(departure_airport : str, arrival_airport : str) -> list:
     return sort_list.sort(full_notam_list)
 
 
-def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: float) -> list :
+def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: int) -> list :
     """
     point_one: starting point
     point_two: ending point
@@ -155,8 +155,8 @@ def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: 
         error_log.append(f"Error: point_one is of the wrong type, expected PointObject and got {type(point_one)}")
     if not(isinstance(point_two, PointObject)) :
         error_log.append(f"Error: point_two is of the wrong type, expected PointObject and got {type(point_one)}")
-    if not(isinstance(spacing, float)) :
-        error_log.append(f"Error: spacing is of the wrong type, expected float and got {type(spacing)}")
+    if not(isinstance(spacing, int)) :
+        error_log.append(f"Error: spacing is of the wrong type, expected int and got {type(spacing)}")
     if error_log :
         error_message = "\n".join(error_log)
         raise ValueError(error_message)
