@@ -1,5 +1,6 @@
 import unittest
 import notamFetch
+from NavigationTools import PointObject
 
 # Run unit tests by running `python3 -m unittest tests/api_http_errors.py`
 
@@ -11,11 +12,11 @@ import notamFetch
 
 class TestHttpResponseStatusCodes( unittest.TestCase ):
 
-    COORDINATES = { notamFetch.LAT_KEY: 35, notamFetch.LONG_KEY: -95 }
+    COORDINATES = PointObject(35, -95)
 
     def test_authorized( self ):
         try:
-            notamFetch.send_api_request( self.COORDINATES )
+            notamFetch.get_notams_at( self.COORDINATES )
         except Exception as err:
             self.fail( "An exception was raised when it shouldn't have" )
         pass
@@ -24,14 +25,14 @@ class TestHttpResponseStatusCodes( unittest.TestCase ):
         good_credentials = notamFetch.credentials
         with self.assertRaises( RuntimeError ) as context:
             notamFetch.credentials = { "client_id": "bad_id", "client_secret": "bad_secret" }
-            notamFetch.send_api_request( self.COORDINATES )
+            notamFetch.get_notams_at( self.COORDINATES )
 
         self.assertTrue( "HTTP 401" in str(context.exception), f"Expected a 401 exception but got {str(context.exception)} instead" )
         notamFetch.credentials = good_credentials
 
     def test_bad_request( self ):
         with self.assertRaises( RuntimeError ) as context:
-            notamFetch.send_api_request( self.COORDINATES, additional_params={"pageSize":999999} )
+            notamFetch.get_notams_at( self.COORDINATES, additional_params={"pageSize":999999} )
 
         self.assertTrue( "Received error message" in str(context.exception), f"Expected an error message but got {str(context.exception)} instead" )
 
@@ -39,7 +40,7 @@ class TestHttpResponseStatusCodes( unittest.TestCase ):
         good_url = notamFetch.faa_api
         with self.assertRaises( RuntimeError ) as context:
             notamFetch.faa_api = f"{good_url}_OBVIOUSLY_BAD_URL"
-            notamFetch.send_api_request( self.COORDINATES )
+            notamFetch.get_notams_at( self.COORDINATES )
 
         self.assertTrue( "HTTP 404" in str(context.exception), f"Expected a 404 exception but got {str(context.exception)} instead" )
         notamFetch.faa_api = good_url
