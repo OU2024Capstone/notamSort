@@ -48,7 +48,7 @@ credentials = {
 }
 
 
-def get_notams_at(request_location : PointObject) -> list:
+def get_notams_at(request_location : PointObject, additional_params = {}) -> list:
     """ 
     This function takes the notam request, requests the api for the notams, and then returns the output.
     request_latitude_longitude expects to be a PointObject object containing the parameters 'latitude' and 'longitude' and contain type float values
@@ -142,7 +142,7 @@ def get_all_notams(departure_airport : str, arrival_airport : str) -> list:
     return sort_list.sort(full_notam_list)
 
 
-def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: float) -> list :
+def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: float | int) -> list :
     """
     point_one: starting point
     point_two: ending point
@@ -155,8 +155,8 @@ def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: 
         error_log.append(f"Error: point_one is of the wrong type, expected PointObject and got {type(point_one)}")
     if not(isinstance(point_two, PointObject)) :
         error_log.append(f"Error: point_two is of the wrong type, expected PointObject and got {type(point_one)}")
-    if not(isinstance(spacing, float)) :
-        error_log.append(f"Error: spacing is of the wrong type, expected float and got {type(spacing)}")
+    if not(isinstance(spacing, (float, int))) :
+        error_log.append(f"Error: spacing is of the wrong type, expected float or int and got {type(spacing)}")
     if error_log :
         error_message = "\n".join(error_log)
         raise ValueError(error_message)
@@ -170,9 +170,9 @@ def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: 
     # we could divide the distance by some max number of api calls instead
     middle_notams = []
     current_point = point_one
-    for i in range(0, (total_distance-spacing), spacing) :
+    for i in range(0, int((total_distance)-spacing), int(spacing)) :
         next_point = get_next_point_manual(current_point, bearing, spacing)
-        middle_notams.append(get_notams_at(next_point))
+        middle_notams += get_notams_at(next_point)
         current_point = next_point
     return middle_notams
 

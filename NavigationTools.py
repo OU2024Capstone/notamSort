@@ -19,10 +19,10 @@ class PointObject :
 
     def __init__(self, latitude = None, longitude = None) :
         error_log = []
-        if not(isinstance(latitude, float)) :
-            error_log.append(f"Error: latitude is of the wrong type, expected float and got {type(latitude)}")
-        if not(isinstance(longitude, float)) :
-            error_log.append(f"Error: longitude is of the wrong type, expected float and got {type(longitude)}")
+        if not(isinstance(latitude, (float, int))) :
+            error_log.append(f"Error: latitude is of the wrong type, expected float or int and got {type(latitude)}")
+        if not(isinstance(longitude, (float, int))) :
+            error_log.append(f"Error: longitude is of the wrong type, expected float or int and got {type(longitude)}")
             
         if abs(latitude) > 90 :
             error_log.append(f"Error: Incorrect value for latitude, must be between -90 and 90")
@@ -54,6 +54,8 @@ class PointObject :
                 longitude = location_geocode.longitude
                 return cls(latitude, longitude)
 
+    def __str__(self) :
+        return f"Latitude: {self.latitude}, Longitude: {self.longitude}"
 
 
 def get_distance(point_one: PointObject, point_two: PointObject) :
@@ -128,7 +130,7 @@ def get_bearing(point_one: PointObject, point_two: PointObject) -> float :
     return bearing
 
 
-def get_next_point_geopy(point: PointObject, bearing: float, distance: float) -> PointObject :
+def get_next_point_geopy(point: PointObject, bearing: float, distance: float| int) -> PointObject :
     """
     point: point from wich we start measuring distance
     distance: target distance from the start in nautical miles
@@ -141,8 +143,8 @@ def get_next_point_geopy(point: PointObject, bearing: float, distance: float) ->
         error_log.append(f"Error: point_one is of the wrong type, expected PointObject and got {type(point)}")
     if not(isinstance(bearing, float)) :
         error_log.append(f"Error: bearing is of the wrong type, expected float and got {type(bearing)}")
-    if not(isinstance(distance, float)) :
-        error_log.append(f"Error: distance is of the wrong type, expected float and got {type(distance)}")
+    if not(isinstance(distance, (float, int))) :
+        error_log.append(f"Error: distance is of the wrong type, expected float or int and got {type(distance)}")
 
     if error_log :
         error_message = "\n".join(error_log)
@@ -159,7 +161,7 @@ def get_next_point_geopy(point: PointObject, bearing: float, distance: float) ->
 # results confirmed by https://www.fcc.gov/media/radio/find-terminal-coordinates
 # both methods are off in the latitude by ~0.001 of the FCC calculator in different directions
 # we currently only use the geopy implementation to find the next point not this one
-def get_next_point_manual(point: PointObject, bearing: float, distance: float) -> PointObject :
+def get_next_point_manual(point: PointObject, bearing: float, distance: float | int) -> PointObject :
     """
     point: point from wich we start measuring distance
     bearing: heading in degrees
@@ -172,8 +174,8 @@ def get_next_point_manual(point: PointObject, bearing: float, distance: float) -
         error_log.append(f"Error: point_one is of the wrong type, expected PointObject and got {type(point)}")
     if not(isinstance(bearing, float)) :
         error_log.append(f"Error: bearing is of the wrong type, expected float and got {type(bearing)}")
-    if not(isinstance(distance, float)) :
-        error_log.append(f"Error: distance is of the wrong type, expected float and got {type(distance)}")
+    if not(isinstance(distance, (float, int))) :
+        error_log.append(f"Error: distance is of the wrong type, expected float or int and got {type(distance)}")
 
     if error_log :
         error_message = "\n".join(error_log)
