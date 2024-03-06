@@ -54,6 +54,8 @@ class PointObject :
                 longitude = location_geocode.longitude
                 return cls(latitude, longitude)
 
+    def __str__(self) :
+        return f"Latitude: {self.latitude}, Longitude: {self.longitude}"
 
 
 def get_distance(point_one: PointObject, point_two: PointObject) :
