@@ -19,10 +19,10 @@ class PointObject :
 
     def __init__(self, latitude = None, longitude = None) :
         error_log = []
-        if not(isinstance(latitude, float)) :
-            error_log.append(f"Error: latitude is of the wrong type, expected float and got {type(latitude)}")
-        if not(isinstance(longitude, float)) :
-            error_log.append(f"Error: longitude is of the wrong type, expected float and got {type(longitude)}")
+        if not(isinstance(latitude, (float, int))) :
+            error_log.append(f"Error: latitude is of the wrong type, expected float or int and got {type(latitude)}")
+        if not(isinstance(longitude, (float, int))) :
+            error_log.append(f"Error: longitude is of the wrong type, expected float or int and got {type(longitude)}")
             
         if abs(latitude) > 90 :
             error_log.append(f"Error: Incorrect value for latitude, must be between -90 and 90")

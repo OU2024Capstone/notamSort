@@ -12,7 +12,7 @@ from NavigationTools import PointObject
 
 class TestHttpResponseStatusCodes( unittest.TestCase ):
 
-    COORDINATES = PointObject(35.0, -95.0)
+    COORDINATES = PointObject(35, -95)
 
     def test_authorized( self ):
         try:
