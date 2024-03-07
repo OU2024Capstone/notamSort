@@ -1,7 +1,12 @@
-<!-- this is the html to display notams -->
+<!-- this is the html to display notams, very barebones currently -->
 <!DOCTYPE html>
 <html>
-    This page is not yet implemented.
-    {{ DepartureAirport }}
-    {{ ArrivalAirport }}
+    <!-- All table cells are text-aligned to the top. -->
+    <style type=text/css>
+        table td, table td * { vertical-align: top;}
+    </style>
+
+    <p> {{ DepartureAirport }} 🡢 {{ ArrivalAirport }} </p>
+    {{ table }}
+
 </html>
