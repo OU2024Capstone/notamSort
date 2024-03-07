@@ -15,7 +15,9 @@ def home():
 @app.route('/query/', methods = ['POST', 'GET'])
 def query():
     if request.method == 'POST':
-        print(notamFetch.get_all_notams(request.form['DepartureAirport'], request.form['ArrivalAirport']), sep='')
+        #print(notamFetch.get_all_notams(request.form['DepartureAirport'], request.form['ArrivalAirport']), sep='')
+
+        notamFetch.get_all_notams(request.form['DepartureAirport'], request.form['ArrivalAirport'])
 
         return render_template('query.html', 
                 DepartureAirport = request.form['DepartureAirport'], 
