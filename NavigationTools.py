@@ -19,6 +19,10 @@ class PointObject :
 
     def __init__(self, latitude = None, longitude = None) :
         error_log = []
+        if latitude == None :
+            error_log.append(f"Error: latitude was not given a value, please input a value for latitude")
+        if longitude == None :
+            error_log.append(f"Error: longitude was not given a value, please input a value for longitude")
         if not(isinstance(latitude, (float, int))) :
             error_log.append(f"Error: latitude is of the wrong type, expected float or int and got {type(latitude)}")
         if not(isinstance(longitude, (float, int))) :
@@ -43,6 +47,8 @@ class PointObject :
         """
         location: a string (KOKC airport code or address) to convert to a set of coordinates
         """
+        if location == None :
+            raise TypeError(f"Error: {location} was not found, please check inputs.")
         if not(isinstance(location, str)) :
             raise ValueError(f"Error: location is of the wrong type, expected str and got {type(location)}")
         else :
