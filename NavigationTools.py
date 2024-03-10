@@ -1,6 +1,7 @@
 import math
 import geopy.distance
 from geopy.geocoders import Nominatim
+from geopy.exc import *
 
 GEOLOCATOR = Nominatim(user_agent="notam_sort")
 # radius of the earth in nautical miles
@@ -18,21 +19,17 @@ class PointObject :
 
 
     def __init__(self, latitude = None, longitude = None) :
-        error_log = []
+        
         if not(isinstance(latitude, (float, int))) :
-            error_log.append(f"Error: latitude is of the wrong type, expected float or int and got {type(latitude)}")
+            raise TypeError(f"Error: Latitude is of the wrong type, expected float or int and got {type(latitude)}")
         if not(isinstance(longitude, (float, int))) :
-            error_log.append(f"Error: longitude is of the wrong type, expected float or int and got {type(longitude)}")
+            raise TypeError(f"Error: Longitude is of the wrong type, expected float or int and got {type(longitude)}")
             
         if abs(latitude) > 90 :
-            error_log.append(f"Error: Incorrect value for latitude, must be between -90 and 90")
+            raise ValueError(f"Error: Incorrect value for latitude, must be between -90 and 90")
         if abs(longitude) > 180 :
-            error_log.append(f"Error: Incorrect value for longitude, must be between -180 and 180")
+            raise ValueError(f"Error: Incorrect value for longitude, must be between -180 and 180")
 
-
-        if error_log :
-            error_message = "\n".join(error_log)
-            raise ValueError(error_message)
         else :
             # if we get this far without an error we have valid lat/long inputs
             self.latitude = latitude
@@ -41,14 +38,19 @@ class PointObject :
     @classmethod
     def from_airport_code(cls, location = None) :
         """
-        location: a string (KOKC airport code or address) to convert to a set of coordinates
+        location: a string (IATA or ICAO code) to convert to a set of coordinates
         """
+
         if not(isinstance(location, str)) :
-            raise ValueError(f"Error: location is of the wrong type, expected str and got {type(location)}")
+            raise TypeError(f"Error: Location is of the wrong type, expected str and got {type(location)}")
         else :
-            location_geocode = GEOLOCATOR.geocode(location)
-            if location_geocode is None :
-                raise RuntimeError(f"Invalid airport. {location} was not found.")
+            try :
+                location_geocode = GEOLOCATOR.geocode(location)
+            except GeopyError as err:
+                raise err
+            if location_geocode == None:
+                raise TypeError(f"Error: The geocoder was not able to find a result for the following location: {location}")
+
             else :
                 latitude = location_geocode.latitude
                 longitude = location_geocode.longitude
