@@ -107,19 +107,19 @@ def get_bearing(point_one: PointObject, point_two: PointObject) -> float :
     longitude_one_radians = math.radians(point_one.longitude)
     latitude_two_radians = math.radians(point_two.latitude)
     longitude_two_radians = math.radians(point_two.longitude)
-    latitude_difference_radians = abs(math.radians(point_two.latitude-point_one.latitude))
+    longitude_difference_radians = math.radians(point_two.longitude-point_one.longitude)
 
-    x = (math.cos(longitude_two_radians) 
-        * math.sin(latitude_difference_radians))
+    x = (math.cos(latitude_two_radians) 
+        * math.sin(longitude_difference_radians))
     
     product_one = (
-        math.cos(longitude_one_radians) 
-        * math.sin(longitude_two_radians)
+        math.cos(latitude_one_radians) 
+        * math.sin(latitude_two_radians)
     )
     product_two = (
-        math.sin(longitude_one_radians) 
-        * math.cos(longitude_two_radians) 
-        * math.cos(latitude_difference_radians)
+        math.sin(latitude_one_radians) 
+        * math.cos(latitude_two_radians) 
+        * math.cos(longitude_difference_radians)
     )
     y = (product_one - product_two)
     

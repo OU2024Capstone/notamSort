@@ -22,10 +22,6 @@ def query():
     /query as a NotamTable.
     """
     if request.method == 'POST':
-        # print(*notamFetch.get_all_notams(request.form['DepartureAirport'], request.form['ArrivalAirport']), sep='')
-        departure_airport = request.form['DepartureAirport']
-        arrival_airport = request.form['ArrivalAirport']
-
         # call backend to retrieve list of notams
         all_notams = notamFetch.get_all_notams(
             departure_airport = departure_airport, 
@@ -57,3 +53,4 @@ class NotamTable(Table):
     effective_end = Col('Effective End')
     text = TextCol('Description')
     type = Col('Type')
+
