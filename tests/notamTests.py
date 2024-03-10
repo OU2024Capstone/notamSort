@@ -51,7 +51,7 @@ class TestNotams(unittest.TestCase) :
         try:
             notamFetch.get_all_notams(arrival_airport, destination_airport)
         except Exception as err:
-            self.fail("Alaska Test Failed: Airport was found.")
+            self.fail("Hawaii Test Failed: Airport was found.")
 
     # Check one airport in the continental US and one outside (i.e. Canada, Mexico, etc.)
             
@@ -62,9 +62,18 @@ class TestNotams(unittest.TestCase) :
         try:
             notamFetch.get_all_notams(arrival_airport, destination_airport)
         except Exception as err:
-            self.fail("Alaska Test Failed: Airport was found.") 
+            self.fail("Canada Test Failed: Airport was found.") 
 
     # Check two airports outside the continental US 
+            
+    def test_canada(self):
+        arrival_airport = "MEX"
+        destination_airport = "DCA"
+        print("Testing flight between " + arrival_airport + " and " + destination_airport)
+        try:
+            notamFetch.get_all_notams(arrival_airport, destination_airport)
+        except Exception as err:
+            self.fail("Mexico Test Failed: Airport was found.")
 
     # Check two airports in other countries
 
