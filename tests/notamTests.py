@@ -35,7 +35,7 @@ class TestNotams(unittest.TestCase) :
 
     # Check one airport in the continental US and one outside (i.e. Alaska and Hawaii)
             
-    def test_close_alaska(self) :
+    def test_alaska(self) :
         arrival_airport = "JNU"
         destination_airport = "OKC"
         print("Testing flight between " + arrival_airport + " and " + destination_airport)
@@ -44,7 +44,7 @@ class TestNotams(unittest.TestCase) :
         except Exception as err:
             self.fail("Alaska Test Failed: Airport was found.")
 
-    def test_close_hawaii(self) :
+    def test_hawaii(self) :
         arrival_airport = "HNL"
         destination_airport = "OKC"
         print("Testing flight between " + arrival_airport + " and " + destination_airport)
@@ -54,7 +54,7 @@ class TestNotams(unittest.TestCase) :
             self.fail("Alaska Test Failed: Airport was found.")
 
     # Check one airport in the continental US and one outside (i.e. Canada, Mexico, etc.)
-
+            
     # Check two airports outside the continental US 
 
     # Check two airports in other countries
