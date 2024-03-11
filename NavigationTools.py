@@ -71,26 +71,9 @@ class PointObject :
             if error_var != None :
                 raise error_var
 
-            if location_geocode is None :
-                raise RuntimeError(f"Invalid airport. {location} was not found.")
             else :
-                try :
-                    latitude = location_geocode.latitude
-                    longitude = location_geocode.longitude
-                except GeocoderUnavailable as e :
-                    error_var = GeocoderUnavailable("Error: Remote connection was not established with the geocoding service")
-                except GeocoderTimedOut as e :
-                    error_var = GeocoderQueryError("Error: Connection with the geocoding service timed out")
-                except GeocoderQueryError as e :
-                    error_var = GeocoderQueryError("Error: Incorrect input was detected when running the geocoding service")
-                except GeocoderServiceError as e :
-                    error_var = GeocoderServiceError(f"Error: Geocode services failed on {location} with error message {e}")
-                except GeopyError as e :
-                    error_var = GeopyError(f"Error: Geocode failed on {location} with error message {e}")
-
-                if error_var != None :
-                    raise error_var
-
+                latitude = location_geocode.latitude
+                longitude = location_geocode.longitude
                 return cls(latitude, longitude)
 
     def __str__(self) :
