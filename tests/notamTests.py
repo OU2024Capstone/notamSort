@@ -7,6 +7,8 @@ class TestNotams(unittest.TestCase) :
     ## Tests involving user input:
 
     # Test valid inputs in the frontend
+
+    @unittest.skip("Waiting on IATA code inputs to be murged to main.")
     def test_inputs_valid_IATA(self):
         arrival_airport = PointObject.from_airport_code("OKC")
         departure_airport = PointObject.from_airport_code("DFW")
