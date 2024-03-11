@@ -2,7 +2,6 @@ import requests
 import json
 import os
 import sys
-from geopy.geocoders import Nominatim
 from dotenv import load_dotenv
 from Notam import Notam
 import NotamSort
@@ -36,8 +35,6 @@ FAA_AUTH = {
 faa_api = "https://external-api.faa.gov/notamapi/v1/notams"
 # spacing between the center of our notam requests in nautical miles
 DEFAULT_PATH_STEP_SIZE_NM = 40
-
-GEOLOCATOR = Nominatim(user_agent="notam_sort")
 
 # read these from a file then add to .gitignore
 # this can be called anywhere doesnt have to be in the function call here
