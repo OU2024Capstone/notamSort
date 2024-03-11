@@ -1,6 +1,7 @@
 import math
 import geopy.distance
 from geopy.geocoders import Nominatim
+from geopy.exc import *
 
 GEOLOCATOR = Nominatim(user_agent="notam_sort")
 # radius of the earth in nautical miles
@@ -19,6 +20,10 @@ class PointObject :
 
     def __init__(self, latitude = None, longitude = None) :
         error_log = []
+        if latitude == None :
+            error_log.append(f"Error: latitude was not given a value, please input a value for latitude")
+        if longitude == None :
+            error_log.append(f"Error: longitude was not given a value, please input a value for longitude")
         if not(isinstance(latitude, (float, int))) :
             error_log.append(f"Error: latitude is of the wrong type, expected float or int and got {type(latitude)}")
         if not(isinstance(longitude, (float, int))) :
@@ -43,12 +48,29 @@ class PointObject :
         """
         location: a string (KOKC airport code or address) to convert to a set of coordinates
         """
+        error_var = None
+
+        if location == None :
+            raise TypeError(f"Error: {location} was found, please check inputs again.")
         if not(isinstance(location, str)) :
             raise ValueError(f"Error: location is of the wrong type, expected str and got {type(location)}")
         else :
-            location_geocode = GEOLOCATOR.geocode(location)
-            if location_geocode is None :
-                raise RuntimeError(f"Invalid airport. {location} was not found.")
+            try :
+                location_geocode = GEOLOCATOR.geocode(location)
+            except GeocoderUnavailable as e :
+                error_var = GeocoderUnavailable("Error: Remote connection was not established with the geocoding service")
+            except GeocoderTimedOut as e :
+                error_var = GeocoderQueryError("Error: Connection with the geocoding service timed out")
+            except GeocoderQueryError as e :
+                error_var = GeocoderQueryError("Error: Incorrect input was detected when running the geocoding service")
+            except GeocoderServiceError as e :
+                error_var = GeocoderServiceError(f"Error: Geocode services failed on {location} with error message {e}")
+            except GeopyError as e :
+                error_var = GeopyError(f"Error: Geocode failed on {location} with error message {e}")
+
+            if error_var != None :
+                raise error_var
+
             else :
                 latitude = location_geocode.latitude
                 longitude = location_geocode.longitude
