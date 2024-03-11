@@ -7,21 +7,20 @@ class TestNotams(unittest.TestCase) :
     ## Tests involving user input:
 
     # Test valid inputs in the frontend
-    '''' Will remove comment if IATA becomes a valid input (or move to invalid)
     def test_inputs_valid_IATA(self):
         arrival_airport = PointObject.from_airport_code("OKC")
         departure_airport = PointObject.from_airport_code("DFW")
-        print("Testing inputs with airport codes:")
+        print("Testing IATA airport code inputs:")
         try:
             notamFetch.get_notams_at(departure_airport)
             notamFetch.get_notams_at(arrival_airport)
         except Exception as err:
             self.fail("Airport was not located when it should have been.")
-    '''
+    
     def test_inputs_valid_ICAO(self):
         arrival_airport = PointObject.from_airport_code("KOKC")
         departure_airport = PointObject.from_airport_code("KDFW")
-        print("Testing inputs with airport codes:")
+        print("Testing ICAO airport code inputs:")
         try:
             notamFetch.get_notams_at(departure_airport)
             notamFetch.get_notams_at(arrival_airport)
@@ -31,33 +30,28 @@ class TestNotams(unittest.TestCase) :
     # Test invalid inputs in the frontend
         
     def test_inputs_invalid_none(self):
-        arrival_airport = None
-        departure_airport = None
+        airport = None
         print("Testing no inputs:")
         with self.assertRaises(Exception):
-            notamFetch.get_notams_at(departure_airport)
-            notamFetch.get_notams_at(arrival_airport)
+            notamFetch.get_notams_at(airport)
 
     def test_inputs_invalid_int(self):
-        arrival_airport = 46
-        departure_airport = 28
+        airport = 46
         print("Testing integer inputs:")
         with self.assertRaises(Exception):
-            notamFetch.get_notams_at(departure_airport)
-            notamFetch.get_notams_at(arrival_airport)
+            notamFetch.get_notams_at(airport)
 
     def test_inputs_invalid_float(self):
-        arrival_airport = 35.3955
-        departure_airport = 97.5962
+        airport = 35.3955
         print("Testing float decimal inputs:")
         with self.assertRaises(Exception):
-            notamFetch.get_notams_at(departure_airport)
-            notamFetch.get_notams_at(arrival_airport)
+            notamFetch.get_notams_at(airport)
 
     ## Tests involving valid airports:
 
     # Check two close airports in the continental US
-    ''''
+    
+    @unittest.skip("get_all_notams takes awhile to run as of now.")
     def test_close(self) :
         arrival_airport = "KMCI" # Kansas City, MO
         departure_airport = "KOKC" # Oklahoma City, OK
@@ -66,9 +60,10 @@ class TestNotams(unittest.TestCase) :
             notamFetch.get_all_notams(departure_airport, arrival_airport)
         except Exception as err:
             self.fail("Airport was not located when it should have been.")
-    '''
+
     # Check two far airports in the continental US
-    ''''
+    
+    @unittest.skip("get_all_notams takes awhile to run as of now.")
     def test_far(self) :
         arrival_airport = "KPWM" # Portland, ME
         departure_airport = "KLAX" # Los Angeles, CA
@@ -77,18 +72,18 @@ class TestNotams(unittest.TestCase) :
             notamFetch.get_all_notams(departure_airport, arrival_airport)
         except Exception as err:
             self.fail("Airport was not located when it should have been.")
-    '''
+    
     ## Tests involving invalid airports:
 
     # Check one airport in the continental US and one outside (i.e. Alaska and Hawaii)
             
-    def test_alaska(self) :
+    def test_alaska_fail(self) :
         airport = "PAJN" # Juneau, AK
         print("Testing " + airport + ":")
         with self.assertRaises(Exception):
             notamFetch.get_notams_at(airport)
 
-    def test_hawaii(self) :
+    def test_hawaii_fail(self) :
         airport = "PHNL" # Honolulu, HI
         print("Testing " + airport + ":")
         with self.assertRaises(Exception):
@@ -109,11 +104,9 @@ class TestNotams(unittest.TestCase) :
             notamFetch.get_notams_at(airport)
 
     # Check airports outside North America
-    '''' Need to change this to be another country,
-    def test_canada_mexico(self):
-        arrival_airport = "CYOW" # Ottawa, Canada
-        departure_airport = "MMMX" # Mexico City, Mexico
+
+    def test_germany_fail(self):
+        airport = "EDDB" # Berlin, Germany
         print("Testing " + airport + ":")
         with self.assertRaises(Exception):
             notamFetch.get_notams_at(airport)
-    '''
