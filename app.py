@@ -35,6 +35,10 @@ def query():
                                DepartureAirport = departure_airport, 
                                ArrivalAirport = arrival_airport)
     
+@app.errorhandler(Exception)
+def handle_backend_errors(e):
+        return render_template("error.html", error_message = e)
+
 class TextCol(Col):
     """Replaces newlines with <br></br> in a table column for HTML display."""
 
@@ -56,4 +60,3 @@ class NotamTable(Table):
     effective_end = Col('Effective End')
     text = TextCol('Description')
     type = Col('Type')
-
