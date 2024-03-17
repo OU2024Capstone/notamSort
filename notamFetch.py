@@ -9,45 +9,48 @@ from Notam import Notam
 import NotamSort
 from NavigationTools import *
 
-# Querying the FAA NOTAM API requires authorization. There are two components
-# required--a client_id and a client_secret. We store these values in a .env
-# file in the root directory. If running locally, it is required to set up
-# these credentials in the .env file manually.
-if not os.path.exists('.env'):
-    raise FileNotFoundError('.env file not found in root directory. Have you set up a .env file for credentials?')
-
-load_dotenv()
-
-client_id = os.getenv('client_id')
-client_secret = os.getenv('client_secret')
-
-missing_auth = []
-if not client_id:
-    missing_auth.append( "client_id" )
-if not client_secret:
-    missing_auth.append( "client_secret" )
-if missing_auth:
-    raise RuntimeError( f"Missing required authorization credential(s) {', '.join( missing_auth )} in .env file! Have you set up your credentials locally?" )
-
-FAA_AUTH = {
-    "client_id": client_id,
-    "client_secret": client_secret,
-}
-
-faa_api = "https://external-api.faa.gov/notamapi/v1/notams"
 # spacing between the center of our notam requests in nautical miles
 DEFAULT_PATH_STEP_SIZE_NM = 40
 
 GEOLOCATOR = Nominatim(user_agent="notam_sort")
+# client's credentials to the FAA API
+credentials = None
+faa_api = "https://external-api.faa.gov/notamapi/v1/notams"
 
-# read these from a file then add to .gitignore
-# this can be called anywhere doesnt have to be in the function call here
-# credentials retrieved from external '.env' file located in root dir
-credentials = {
-    "client_id": os.getenv('client_id'),
-    "client_secret": os.getenv('client_secret'),
-}
+def load_credentials() -> dict:
+    """Returns the client's credentials for querying the FAA's API. 
+    
+    Querying the FAA NOTAM API requires authorization. There are two components
+    required--a client_id and a client_secret. We store these values in a .env
+    file in the root directory. If running locally, it is required to set up
+    these credentials in the .env file manually.
 
+    Returns
+    -------
+    dict
+        A dict containing client_id and client_secret.
+    """
+
+    if not os.path.exists('.env'):
+        raise FileNotFoundError('.env file not found in root directory. Have you set up a .env file for credentials?')
+
+    load_dotenv()
+
+    client_id = os.getenv('client_id')
+    client_secret = os.getenv('client_secret')
+
+    missing_auth = []
+    if not client_id:
+        missing_auth.append( "client_id" )
+    if not client_secret:
+        missing_auth.append( "client_secret" )
+    if missing_auth:
+        raise RuntimeError( f"Missing required authorization credential(s) {', '.join( missing_auth )} in .env file! Have you set up your credentials locally?" )
+
+    return {
+        "client_id": client_id,
+        "client_secret": client_secret,
+    }
 
 def get_notams_at(request_location : PointObject, additional_params = {}) -> list:
     """ 
@@ -115,6 +118,8 @@ def get_all_notams(departure_airport : str, arrival_airport : str) -> list:
         retrieve depature and arrival airport notams as well as in-flight notams,
         get these notams sorted, and return the sorted list back to the front end."""
     
+    global credentials
+    credentials = load_credentials()
     sort_list = NotamSort.SimpleSort()
     
     error_log = []
