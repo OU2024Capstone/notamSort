@@ -7,6 +7,7 @@
     </style>
 
     <p> {{ DepartureAirport }} 🡢 {{ ArrivalAirport }} </p>
-    {{ table }}
-
+    {% if table is not none %}
+        {{ table }}
+    {% endif %}
 </html>

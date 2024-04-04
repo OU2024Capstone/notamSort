@@ -1,15 +1,18 @@
-from flask import Flask, request
+from io import StringIO
+from flask import Flask, jsonify, request
 from flask import render_template
 import notamFetch
 from flask_table import Table, Col
 
 app = Flask(__name__)
+# All print statements write to output, which is displayed on the homepage.
+message_log = StringIO()
 
 # Home displays the form for user input
 @app.route("/")
 def home():
     return render_template(
-        "user_input.html",
+        "user_input.html"
     )
 
 # /query displays the notams
@@ -22,22 +25,45 @@ def query():
     /query as a NotamTable.
     """
     if request.method == 'POST':
+        clear_log()
+        
         departure_airport = request.form['DepartureAirport']
         arrival_airport = request.form['ArrivalAirport']
+        
+        print(f"Finding all NOTAMs on flight path from {departure_airport} to {arrival_airport}.", file=message_log)
 
         # call backend to retrieve list of notams
         all_notams = notamFetch.get_all_notams(
             departure_airport = departure_airport, 
-            arrival_airport = arrival_airport)
-        
+            arrival_airport = arrival_airport, message_log=message_log)
+
         return render_template('query.html', 
                                table = NotamTable(all_notams, border='1px solid black'),
                                DepartureAirport = departure_airport, 
                                ArrivalAirport = arrival_airport)
-    
+
 @app.errorhandler(Exception)
 def handle_backend_errors(e):
         return render_template("error.html", error_message = e)
+
+@app.route('/out', methods=['GET'])
+def out():
+    """Returns all printed messages as a JSON-formatted Response object.
+    
+    Real-time query updates can be displayed on the homepage by converting 
+    the json response into text.
+    """
+
+    # Use seek(0) to read from the start of the StringIO
+    message_log.seek(0)
+
+    return jsonify(message_log.read())
+
+def clear_log():
+    """Clears all log messages."""
+
+    message_log.truncate(0)
+    message_log.seek(0)
 
 class TextCol(Col):
     """Replaces newlines with <br></br> in a table column for HTML display."""

@@ -1,8 +1,24 @@
 <!DOCTYPE html>
 <html>
+    <!-- Form for user input. -->
     <form action="/query" method = "POST">
         <p>Departure Airport <input type = "text" name = "DepartureAirport" /></p>
         <p>Arrival Airport <input type = "text" name = "ArrivalAirport" /></p>
         <p><input type = "submit" value = "Search" /></p>
     </form>
+    
+    <!-- The Javascript below updates the message log with new messages every 1.5s. -->
+    <div id="out"></div>
+    <script>         
+        window.setInterval(function(){
+            var message_log = document.getElementById("out")
+            
+            fetch("{{ url_for('out') }}")
+                .then(response => response.json())
+                .then(text => {
+                        message_log.innerText = text
+                })
+            
+        }, 1500)
+    </script>
 </html>
