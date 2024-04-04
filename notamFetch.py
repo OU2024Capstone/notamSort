@@ -11,13 +11,25 @@ from NavigationTools import *
 from io import StringIO
 import concurrent.futures
 
+# link to the FAA API
+FAA_API_ENTRYPOINT = "https://external-api.faa.gov/notamapi/v1/notams"
 # spacing between the center of our notam requests in nautical miles
 DEFAULT_PATH_STEP_SIZE_NM = 40
-
+# max number of NOTAMs we can grab in one call
+MAX_NOTAMS = 1000
+# radius around the flight path to get NOTAMs
+NOTAM_RADIUS = 25
+# blank default parameters for the API
+NOTAM_REQUEST_PARAMS = {
+    "pageSize" : str(MAX_NOTAMS),
+    "locationRadius" : str(NOTAM_RADIUS),
+}
+# geolocator API agent for coordinates
 GEOLOCATOR = Nominatim(user_agent="notam_sort")
+
 # client's credentials to the FAA API
 credentials = None
-faa_api = "https://external-api.faa.gov/notamapi/v1/notams"
+
 
 def load_credentials() -> dict:
     """Returns the client's credentials for querying the FAA's API. 
@@ -62,54 +74,51 @@ def get_notams_at(request_location : PointObject, message_log : StringIO, additi
 
     if not(isinstance(request_location, PointObject)):
         raise ValueError(f"Error: location is of invalid type, expected PointObject got {type(request_location)}")
-    
-    # This is our request template
-    notam_request_parameters = {
-        "pageSize" : "1000",
-        "pageNum" : "1",
-        "locationLatitude" : str(request_location.latitude),
-        "locationLongitude" : str(request_location.longitude),
-        "locationRadius" : "25",
-    }
+    if not(isinstance(additional_params, dict)):
+        raise ValueError(f"Error: additional_params is of invalid type, expected dict got {type(additional_params)}")
 
-    notam_request_parameters.update( additional_params )
-
-    api_response = requests.get(url=faa_api, params=notam_request_parameters, headers=credentials)
-
-    if api_response.status_code == 401:
-        raise RuntimeError( f"HTTP 401 return code from FAA API. Are you authenticated?" )
-    if api_response.status_code == 404:
-        raise RuntimeError( f"HTTP 404 return code from FAA API. Has the URL moved? Accessed url \"{faa_api}\"" )
-    if api_response.status_code == 429:
-        raise RuntimeError( f"HTTP 429 return code from FAA API. Your request limit has been reached, please wait 1 minute and try again." )
-    if api_response.status_code != 200:
-        raise RuntimeError( f"Received non-HTTP 200 status code {api_response.status_code} from FAA API" )
-
-    api_response_json = json.loads(api_response.text)
-
-    # The FAA API often does not follow good HTTP response code practices. For
-    # example, instead of returning an HTTP 400 Bad Request, the API will
-    # respond with HTTP 200 but include a single message about what was wrong.
-    # In these cases, we want to ensure that we fail appropriately.
-    if "message" in api_response_json.keys() and len(api_response_json.keys()) == 1:
-        raise RuntimeError( f"Received error message from FAA API: {api_response_json['message']}" )
-
-    # Parsing data about dictionary.
-    num_notams = api_response_json.get("pageSize")
-    num_pages = api_response_json.get("pageNum")
-    returned_notam_list = api_response_json.get("items")
+    NOTAM_REQUEST_PARAMS.update({"locationLatitude" : str(request_location.latitude)})
+    NOTAM_REQUEST_PARAMS.update({"locationLongitude" : str(request_location.longitude)})
+    NOTAM_REQUEST_PARAMS.update(additional_params)
 
     notam_list = []
+    num_pages = 1
+    current_page = 1
+    while current_page <= num_pages :
+        NOTAM_REQUEST_PARAMS.update({"pageNum" : str(current_page)})
+        
+        api_response = requests.get(url=FAA_API_ENTRYPOINT, params=NOTAM_REQUEST_PARAMS, headers=credentials)
 
-    # Get all of the notams and place them inside of notam list.
-    for notam in returned_notam_list:
-        # Create a Notam object and append to the notam list. The Notam
-        # class contains constants to get specific properties from the 
-        # FAA api easily.
-        notam_list.append(Notam(notam))
-    
-    print(f"Found {len(notam_list)} notams at {request_location}", file=message_log)
+        if api_response.status_code == 401:
+            raise RuntimeError( f"HTTP 401 return code from FAA API. Are you authenticated?" )
+        if api_response.status_code == 404:
+            raise RuntimeError( f"HTTP 404 return code from FAA API. Has the URL moved? Accessed url \"{FAA_API_ENTRYPOINT}\"" )
+        if api_response.status_code != 200:
+            raise RuntimeError( f"Received non-HTTP 200 status code {api_response.status_code} from FAA API" )
 
+        api_response_json = json.loads(api_response.text)
+
+        # The FAA API often does not follow good HTTP response code practices. For
+        # example, instead of returning an HTTP 400 Bad Request, the API will
+        # respond with HTTP 200 but include a single message about what was wrong.
+        # In these cases, we want to ensure that we fail appropriately.
+        if "message" in api_response_json.keys() and len(api_response_json.keys()) == 1:
+            raise RuntimeError( f"Received error message from FAA API: {api_response_json['message']}" )
+        
+        num_pages = api_response_json.get("totalPages")
+        num_notams = api_response_json.get("totalCount")
+        returned_notam_list = api_response_json.get("items")
+        for notam in returned_notam_list:
+            # Create a Notam object and append to the notam list. The Notam
+            # class contains constants to get specific properties from the 
+            # FAA api easily.
+            notam_list.append(Notam(notam))
+        
+        print(f"Found {len(returned_notam_list)} notams at {request_location}")
+        current_page += 1
+
+    if (len(notam_list) < num_notams) :
+        raise RuntimeError(f"Unable to retrieve all notams at {request_location}, expected {num_notams} and got {len(notam_list)}")
     return notam_list
 
 def get_notams_from_point_list(point_list : list, message_log : StringIO) -> list:

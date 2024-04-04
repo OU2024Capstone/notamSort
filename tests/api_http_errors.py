@@ -42,11 +42,11 @@ class TestHttpResponseStatusCodes( unittest.TestCase ):
         self.assertTrue( "Received error message" in str(context.exception), f"Expected an error message but got {str(context.exception)} instead" )
 
     def test_not_found( self ):
-        good_url = notamFetch.faa_api
+        good_url = notamFetch.FAA_API_ENTRYPOINT
         with self.assertRaises( RuntimeError ) as context:
             notamFetch.credentials = self.credentials
-            notamFetch.faa_api = f"{good_url}_OBVIOUSLY_BAD_URL"
-            notamFetch.get_notams_at( self.COORDINATES, self.message_log )
+            notamFetch.FAA_API_ENTRYPOINT = f"{good_url}_OBVIOUSLY_BAD_URL"
+            notamFetch.get_notams_at( self.COORDINATES )
 
         self.assertTrue( "HTTP 404" in str(context.exception), f"Expected a 404 exception but got {str(context.exception)} instead" )
-        notamFetch.faa_api = good_url
+        notamFetch.FAA_API_ENTRYPOINT = good_url
