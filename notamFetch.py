@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from Notam import Notam
 import NotamSort
 from NavigationTools import *
+from io import StringIO
 
 # spacing between the center of our notam requests in nautical miles
 DEFAULT_PATH_STEP_SIZE_NM = 40
@@ -52,7 +53,7 @@ def load_credentials() -> dict:
         "client_secret": client_secret,
     }
 
-def get_notams_at(request_location : PointObject, additional_params = {}) -> list:
+def get_notams_at(request_location : PointObject, message_log : StringIO, additional_params = {}) -> list:
     """ 
     This function takes the notam request, requests the api for the notams, and then returns the output.
     request_latitude_longitude expects to be a PointObject object containing the parameters 'latitude' and 'longitude' and contain type float values
@@ -104,7 +105,7 @@ def get_notams_at(request_location : PointObject, additional_params = {}) -> lis
         # FAA api easily.
         notam_list.append(Notam(notam))
     
-    print(f"Found {len(notam_list)} notams at {request_location}")
+    print(f"Found {len(notam_list)} notams at {request_location}", file=message_log)
 
     return notam_list
 
@@ -112,7 +113,7 @@ def get_notams_at(request_location : PointObject, additional_params = {}) -> lis
 # Currently returns the union of the depature and arrival airport notams.
 # Looking to add in-flight notams and figure out a way to remove any intersecting notams.
 # Additionally, the resulting list should be sorted.
-def get_all_notams(departure_airport : str, arrival_airport : str) -> list:
+def get_all_notams(departure_airport : str, arrival_airport : str, message_log : StringIO) -> list:
     """This is the starting point for the program, the front end should call this function.
         From there, this function should call other functions to 
         retrieve depature and arrival airport notams as well as in-flight notams,
@@ -134,10 +135,10 @@ def get_all_notams(departure_airport : str, arrival_airport : str) -> list:
     departure_point = PointObject.from_airport_code(departure_airport)
     arrival_point = PointObject.from_airport_code(arrival_airport)
 
-    departure_airport_notams = get_notams_at(departure_point)
-    arrival_airport_notams = get_notams_at(arrival_point)
+    departure_airport_notams = get_notams_at(departure_point, message_log)
+    arrival_airport_notams = get_notams_at(arrival_point, message_log)
 
-    middle_notams = get_notams_between(departure_point, arrival_point, DEFAULT_PATH_STEP_SIZE_NM)
+    middle_notams = get_notams_between(departure_point, arrival_point, DEFAULT_PATH_STEP_SIZE_NM, message_log)
 
     full_notam_list = (
         departure_airport_notams 
@@ -148,11 +149,12 @@ def get_all_notams(departure_airport : str, arrival_airport : str) -> list:
     return sort_list.sort(full_notam_list)
 
 
-def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: float | int) -> list :
+def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: float | int, message_log : StringIO) -> list :
     """
     point_one: starting point
     point_two: ending point
     spacing: nautical miles between the center of each notam call
+    message_log: StringIO object used to display printed messages to the frontend.
 
     Returns a list of the notams between the 2 points, does not include the end points
     """
@@ -178,7 +180,7 @@ def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: 
     current_point = point_one
     for i in range(0, int((total_distance)-spacing), int(spacing)) :
         next_point = get_next_point_manual(current_point, bearing, spacing)
-        middle_notams += get_notams_at(next_point)
+        middle_notams += get_notams_at(next_point, message_log)
         current_point = next_point
         bearing = get_bearing(current_point, point_two)
     return middle_notams
@@ -198,13 +200,16 @@ def print_to_console(notam_list : list):
     for notam in notam_list:
         print(notam)
 
-def is_valid_US_airport_code(user_input : str) -> bool:
+def is_valid_US_airport_code(user_input : str, message_log : StringIO) -> bool:
     """Validates an ICAO/IATA US airport code using Nominatim.
 
     Parameters
     ----------
     user_input : str
         String representing the airport code.
+
+    message_log : StringIO
+        Used to redirect all printed messages to the frontend.
 
     Returns
     -------
@@ -214,7 +219,7 @@ def is_valid_US_airport_code(user_input : str) -> bool:
 
     # Only accecpt 4-character or 3-character strings
     if(len(user_input) > 4 or len(user_input) < 3):
-        print(f"'{user_input}' must be in either ICAO or IATA format.")
+        print(f"'{user_input}' must be in either ICAO or IATA format.", file=message_log)
         return False
     
     code_format = 'iata' if len(user_input) == 3 else 'icao'
@@ -230,7 +235,7 @@ def is_valid_US_airport_code(user_input : str) -> bool:
     try:
         geocoder_results = GEOLOCATOR.geocode(geocode_query, exactly_one=False, namedetails=True, country_codes="US" )
     except exc.GeopyError as error_message:
-        print(f"Error: geocode failed with message '{error_message}'.")
+        print(f"Error: geocode failed with message '{error_message}'.", file=message_log)
 
     # Get only the locations that are classified as an aeroway with an 
     # ICAO/IATA code matching the user's input. If none exist, the input was
