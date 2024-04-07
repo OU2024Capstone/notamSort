@@ -1,0 +1,10 @@
+{
+"MaxValue":150,
+   "Category":"Scope",
+   "dataScores":{
+      "W":1,
+      "A":2,
+      "E":3,
+      "K":4
+   }
+}

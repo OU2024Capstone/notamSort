@@ -1,0 +1,12 @@
+{
+   "MaxValue": 250,
+   "Category": "Purpose",
+   "dataScores": {
+      "N": 1,
+      "O": 2,
+      "B": 3,
+      "M": 4,
+      "K": 5,
+      "SCHEDULED": 6
+   }
+}

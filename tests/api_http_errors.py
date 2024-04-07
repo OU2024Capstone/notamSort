@@ -46,7 +46,7 @@ class TestHttpResponseStatusCodes( unittest.TestCase ):
         with self.assertRaises( RuntimeError ) as context:
             notamFetch.credentials = self.credentials
             notamFetch.FAA_API_ENTRYPOINT = f"{good_url}_OBVIOUSLY_BAD_URL"
-            notamFetch.get_notams_at( self.COORDINATES )
+            notamFetch.get_notams_at( self.COORDINATES , message_log = self.message_log)
 
         self.assertTrue( "HTTP 404" in str(context.exception), f"Expected a 404 exception but got {str(context.exception)} instead" )
         notamFetch.FAA_API_ENTRYPOINT = good_url
