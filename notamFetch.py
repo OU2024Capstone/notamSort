@@ -9,6 +9,7 @@ from Notam import Notam
 import NotamSort
 from NavigationTools import *
 from io import StringIO
+import concurrent.futures
 
 # spacing between the center of our notam requests in nautical miles
 DEFAULT_PATH_STEP_SIZE_NM = 40
@@ -79,6 +80,8 @@ def get_notams_at(request_location : PointObject, message_log : StringIO, additi
         raise RuntimeError( f"HTTP 401 return code from FAA API. Are you authenticated?" )
     if api_response.status_code == 404:
         raise RuntimeError( f"HTTP 404 return code from FAA API. Has the URL moved? Accessed url \"{faa_api}\"" )
+    if api_response.status_code == 429:
+        raise RuntimeError( f"HTTP 429 return code from FAA API. Your request limit has been reached, please wait 1 minute and try again." )
     if api_response.status_code != 200:
         raise RuntimeError( f"Received non-HTTP 200 status code {api_response.status_code} from FAA API" )
 
@@ -109,6 +112,51 @@ def get_notams_at(request_location : PointObject, message_log : StringIO, additi
 
     return notam_list
 
+def get_notams_from_point_list(point_list : list, message_log : StringIO) -> list:
+    """
+    point_list: The list of points that should be requested at
+
+    Returns a list of notams at each point within point_list
+    """
+    
+    # Create as many threads as needed until 
+    # hitting the FAA API request per minute cap.
+    # Essentially, every request will have its own thread.
+    MAX_NUMBER_OF_THREADS = 50
+    
+    # Good code for debugging without overloading the FAA API
+    # Note that the API may still return a 429 if you make two
+    # separate queries too quickly.
+    if len(point_list) > MAX_NUMBER_OF_THREADS:
+        raise RuntimeError(f"Flight path is too long, attempting to send {len(point_list)} requests which is over the {MAX_NUMBER_OF_THREADS} request limit! Not all NOTAMs can be retrieved from the FAA API server!")
+
+
+    thread_list = []
+    # Creates a thread pool which executes until all of the threads are finished
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+
+        # Create a thread for every request
+        for point in point_list:
+            thread = executor.submit(get_notams_at, point, message_log)
+            thread_list.append(thread)
+
+
+    notam_list = []
+    # Each request has a list of notams, so concatenate each thread's output into the notam list
+    while len(thread_list) > 0:
+        thread_list_copy = thread_list.copy()
+
+        for i in range(len(thread_list_copy)):
+            request = thread_list_copy[i]
+
+            # Only check threads that are done.
+            # Remove threads after retrieving their data.
+            if(request.done()):
+                notam_list += request.result()
+                thread_list.remove(request)
+    
+    return notam_list
+
 
 # Currently returns the union of the depature and arrival airport notams.
 # Looking to add in-flight notams and figure out a way to remove any intersecting notams.
@@ -135,28 +183,26 @@ def get_all_notams(departure_airport : str, arrival_airport : str, message_log :
     departure_point = PointObject.from_airport_code(departure_airport)
     arrival_point = PointObject.from_airport_code(arrival_airport)
 
-    departure_airport_notams = get_notams_at(departure_point, message_log)
-    arrival_airport_notams = get_notams_at(arrival_point, message_log)
+    point_list = get_points_between(departure_point, arrival_point, DEFAULT_PATH_STEP_SIZE_NM)
 
-    middle_notams = get_notams_between(departure_point, arrival_point, DEFAULT_PATH_STEP_SIZE_NM, message_log)
+    # point_list currently has only the in-flight points.
+    # Add the departure and arrival points.
+    point_list.insert(0, departure_point)
+    point_list.append(arrival_point)
 
-    full_notam_list = (
-        departure_airport_notams 
-        + arrival_airport_notams 
-        + middle_notams
-    )
+    full_notam_list = get_notams_from_point_list(point_list, message_log)
 
     return sort_list.sort(full_notam_list)
 
 
-def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: float | int, message_log : StringIO) -> list :
+def get_points_between(point_one: PointObject, point_two: PointObject, spacing: float | int) -> list :
     """
     point_one: starting point
     point_two: ending point
     spacing: nautical miles between the center of each notam call
     message_log: StringIO object used to display printed messages to the frontend.
 
-    Returns a list of the notams between the 2 points, does not include the end points
+    Returns a list of points between the 2 points, does not include the end points
     """
     error_log = []
     if not(isinstance(point_one, PointObject)) :
@@ -176,15 +222,14 @@ def get_notams_between(point_one: PointObject, point_two: PointObject, spacing: 
     # i acts as our mile-marker along the flight path
     # with a hard-coded spacing option we have issues with overlap around the end of the path
     # we could divide the distance by some max number of api calls instead
-    middle_notams = []
+    point_list = []
     current_point = point_one
     for i in range(0, int((total_distance)-spacing), int(spacing)) :
         next_point = get_next_point_manual(current_point, bearing, spacing)
-        middle_notams += get_notams_at(next_point, message_log)
+        point_list.append(next_point)
         current_point = next_point
         bearing = get_bearing(current_point, point_two)
-    return middle_notams
-
+    return point_list
 
 def save_to_file(output_file_name : str, notam_list: list) :
     if notam_list :
