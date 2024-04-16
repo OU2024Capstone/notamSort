@@ -1,0 +1,9 @@
+{
+"MaxValue":100,
+   "Category":"Traffic",
+   "dataScores":{
+      "I":1,
+      "V":2,
+      "K":3
+   }
+}

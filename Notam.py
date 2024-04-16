@@ -8,6 +8,16 @@ class Notam:
     TYPE = "type"
     LOCATION = "location"
     NUMBER = "number"
+    SCORE = 0
+    ISSUED = "issued"
+    SELECTION_CODE = "selectionCode"
+    TRAFFIC = "traffic"
+    PURPOSE = "purpose"
+    SCOPE = "scope"
+    CLASSIFICATION = "classification"
+    ICAOLOCATION = "icaoLocation"
+    COORDINATES = "coordinates"
+    RADIUS = "radius"
     
     def __init__(self, raw_notam_data):
         """
@@ -24,6 +34,15 @@ class Notam:
         self.type = notam_properties.get(Notam.TYPE)
         self.location = notam_properties.get(Notam.LOCATION)
         self.number = notam_properties.get(Notam.NUMBER)
+        self.issued = notam_properties.get(Notam.ISSUED)
+        self.classification = notam_properties.get(Notam.CLASSIFICATION)
+        self.location = notam_properties.get(Notam.LOCATION)
+        self.icao_location = notam_properties.get(Notam.ICAOLOCATION)
+        self.traffic = notam_properties.get(Notam.TRAFFIC)
+        self.purpose = notam_properties.get(Notam.PURPOSE)
+        self.scope = notam_properties.get(Notam.SCOPE)
+        self.radius = notam_properties.get(Notam.RADIUS)
+        self.selection_code = notam_properties.get(Notam.SELECTION_CODE)
             
     def __str__(self):
         """Returns a string representing the notam object in the form

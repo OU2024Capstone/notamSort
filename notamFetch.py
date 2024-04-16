@@ -114,7 +114,7 @@ def get_notams_at(request_location : PointObject, message_log : StringIO, additi
             # FAA api easily.
             notam_list.append(Notam(notam))
         
-        print(f"Found {len(returned_notam_list)} notams at {request_location}")
+        print(f"Found {len(returned_notam_list)} notams at {request_location}", file=message_log)
         current_page += 1
 
     if (len(notam_list) < num_notams) :
@@ -178,7 +178,7 @@ def get_all_notams(departure_airport : str, arrival_airport : str, message_log :
     
     global credentials
     credentials = load_credentials()
-    sort_list = NotamSort.SimpleSort()
+    sort_list = NotamSort.RatingSort()
     
     error_log = []
     if not(isinstance(departure_airport, str)) :
@@ -201,7 +201,7 @@ def get_all_notams(departure_airport : str, arrival_airport : str, message_log :
 
     full_notam_list = get_notams_from_point_list(point_list, message_log)
 
-    return sort_list.sort(full_notam_list)
+    return sort_list.sort(full_notam_list, departure_airport, arrival_airport)
 
 
 def get_points_between(point_one: PointObject, point_two: PointObject, spacing: float | int) -> list :
