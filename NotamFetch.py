@@ -94,6 +94,8 @@ def get_notams_at(request_location : PointObject, request_radius : int, message_
             raise RuntimeError( f"HTTP 401 return code from FAA API. Are you authenticated?" )
         if api_response.status_code == 404:
             raise RuntimeError( f"HTTP 404 return code from FAA API. Has the URL moved? Accessed url \"{FAA_API_ENTRYPOINT}\"" )
+        if api_response.status_code == 429:
+            raise RuntimeError( f"HTTP 429 return code from FAA API. Your request limit has been reached, please wait 1 minute and try again." )
         if api_response.status_code != 200:
             raise RuntimeError( f"Received non-HTTP 200 status code {api_response.status_code} from FAA API" )
 
@@ -207,8 +209,8 @@ def get_all_notams(departure_airport : str, arrival_airport : str, message_log :
         error_message = "\n".join(error_log)
         raise ValueError(error_message)
     
-    departure_point = PointObject.from_airport_code(departure_airport)
-    arrival_point = PointObject.from_airport_code(arrival_airport)
+    departure_point = PointObject.from_airport_code(message_log, departure_airport)
+    arrival_point = PointObject.from_airport_code(message_log, arrival_airport)
 
     step_size = DEFAULT_PATH_STEP_SIZE_NM
     request_radius = NOTAM_RADIUS
@@ -317,7 +319,7 @@ def is_valid_US_airport_code(user_input : str, message_log : StringIO) -> bool:
     # search result.
     try:
         geocoder_results = GEOLOCATOR.geocode(geocode_query, exactly_one=False, namedetails=True, country_codes="US" )
-    except exc.GeopyError as error_message:
+    except GeopyError as error_message:
         print(f"Error: geocode failed with message '{error_message}'.", file=message_log)
 
     # Get only the locations that are classified as an aeroway with an 
@@ -331,7 +333,7 @@ def is_valid_US_airport_code(user_input : str, message_log : StringIO) -> bool:
                             location.raw.get('namedetails').get(code_format).casefold() == user_input.casefold(), 
                             geocoder_results), None)
 
-    if airport is None:
-        return False
-    else:
+    if airport:
         return True
+    else:
+        return False

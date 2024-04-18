@@ -2,6 +2,9 @@ import math
 import geopy.distance
 from geopy.geocoders import Nominatim
 from geopy.exc import *
+from io import StringIO
+
+import geopy.location
 
 GEOLOCATOR = Nominatim(user_agent="notam_sort")
 # radius of the earth in nautical miles
@@ -36,7 +39,7 @@ class PointObject :
             self.longitude = longitude
 
     @classmethod
-    def from_airport_code(cls, location = None) :
+    def from_airport_code(cls, message_log : StringIO, location = None) :
         """
         location: a string (IATA or ICAO code) to convert to a set of coordinates
         """
@@ -45,7 +48,7 @@ class PointObject :
             raise TypeError(f"Error: Location is of the wrong type, expected str and got {type(location)}")
         else :
             try :
-                location_geocode = GEOLOCATOR.geocode(location)
+                location_geocode = cls.get_valid_US_airport(location, message_log)
             except GeopyError as err:
                 raise err
             if location_geocode == None:
@@ -55,6 +58,57 @@ class PointObject :
                 latitude = location_geocode.latitude
                 longitude = location_geocode.longitude
                 return cls(latitude, longitude)
+    
+    @classmethod
+    def get_valid_US_airport(cls, user_input : str, message_log : StringIO) -> geopy.location.Location:
+        """ Get the first US airport that is given from a Nominatim request.
+
+        Parameters
+        ----------
+        user_input : str
+            String representing the airport code.
+
+        message_log : StringIO
+            Used to redirect all printed messages to the frontend.
+
+        Returns
+        -------
+        geopy.location.Location
+            The location of the airport found from the string
+        """
+
+        # Only accecpt 4-character or 3-character strings
+        if(len(user_input) > 4 or len(user_input) < 3):
+            print(f"'{user_input}' must be in either ICAO or IATA format.", file=message_log)
+            return False
+        
+        code_format = 'iata' if len(user_input) == 3 else 'icao'
+        geocode_query = f"{user_input.upper()} Airport"
+        geocoder_results = None
+        airport = None
+
+        # namedetails provides the ICAO/IATA code from the geocode results, which
+        # are not returned by default. exactly_one is set to false because 
+        # airport codes are not prioritzed in Nominatim, and we want to 
+        # watch out for any cases where a non-airport location is the first
+        # search result.
+        try:
+            geocoder_results = GEOLOCATOR.geocode(geocode_query, exactly_one=False, namedetails=True, country_codes="US" )
+        except GeopyError as error_message:
+            print(f"Error: geocode failed with message '{error_message}'.", file=message_log)
+
+        # Get only the locations that are classified as an aeroway with an 
+        # ICAO/IATA code matching the user's input. If none exist, the input was
+        # not a valid US airport code.
+        # In Nominatim, all airports are classified as an aeroway.
+        # casefold() => Used for case-insensitive string comparison.
+        if geocoder_results is not None:
+            airport = next(filter(lambda location: 
+                                location.raw.get('class') =='aeroway' and 
+                                location.raw.get('namedetails').get(code_format).casefold() == user_input.casefold(), 
+                                geocoder_results), None)
+
+        return airport
 
     def __str__(self) :
         return f"Latitude: {self.latitude}, Longitude: {self.longitude}"
