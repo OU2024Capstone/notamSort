@@ -66,7 +66,7 @@ def load_credentials() -> dict:
         "client_secret": client_secret,
     }
 
-def get_notams_at(request_location : PointObject, message_log : StringIO, additional_params = {}) -> list:
+def get_notams_at(request_location : PointObject, request_radius : int, message_log : StringIO, additional_params = {}) -> list:
     """ 
     This function takes the notam request, requests the api for the notams, and then returns the output.
     request_latitude_longitude expects to be a PointObject object containing the parameters 'latitude' and 'longitude' and contain type float values
@@ -79,6 +79,7 @@ def get_notams_at(request_location : PointObject, message_log : StringIO, additi
 
     NOTAM_REQUEST_PARAMS.update({"locationLatitude" : str(request_location.latitude)})
     NOTAM_REQUEST_PARAMS.update({"locationLongitude" : str(request_location.longitude)})
+    NOTAM_REQUEST_PARAMS.update({"locationRadius" : str(request_radius)})
     NOTAM_REQUEST_PARAMS.update(additional_params)
 
     notam_list = []
@@ -121,9 +122,11 @@ def get_notams_at(request_location : PointObject, message_log : StringIO, additi
         raise RuntimeError(f"Unable to retrieve all notams at {request_location}, expected {num_notams} and got {len(notam_list)}")
     return notam_list
 
-def get_notams_from_point_list(point_list : list, message_log : StringIO) -> list:
+def get_notams_from_point_list(point_list : list, request_radius : int, message_log : StringIO) -> list:
     """
     point_list: The list of points that should be requested at
+
+    request_radius: The radius that requests are given when issued at a point
 
     Returns a list of notams at each point within point_list
     """
@@ -139,14 +142,13 @@ def get_notams_from_point_list(point_list : list, message_log : StringIO) -> lis
     if len(point_list) > MAX_NUMBER_OF_THREADS:
         raise RuntimeError(f"Flight path is too long, attempting to send {len(point_list)} requests which is over the {MAX_NUMBER_OF_THREADS} request limit! Not all NOTAMs can be retrieved from the FAA API server!")
 
-
     thread_list = []
     # Creates a thread pool which executes until all of the threads are finished
     with concurrent.futures.ThreadPoolExecutor() as executor:
 
         # Create a thread for every request
         for point in point_list:
-            thread = executor.submit(get_notams_at, point, message_log)
+            thread = executor.submit(get_notams_at, point, request_radius, message_log)
             thread_list.append(thread)
 
 
@@ -166,6 +168,22 @@ def get_notams_from_point_list(point_list : list, message_log : StringIO) -> lis
     
     return notam_list
 
+def find_min_step_size(airport_distance : float):
+    """
+    Parameters
+    -----------
+    airport_distance : float
+        The distance between two airports. Used to find how far each request needs to be
+        to ensure the requests don't result in a 429 error code from the FAA API.
+
+    Return Value
+    ---------
+    The minimum step size needed to traverse the flight path in 50 requests.
+    """
+    
+    MAX_IN_FLIGHT_REQUESTS = 48
+    
+    return math.ceil(airport_distance/MAX_IN_FLIGHT_REQUESTS)
 
 # Currently returns the union of the depature and arrival airport notams.
 # Looking to add in-flight notams and figure out a way to remove any intersecting notams.
@@ -192,14 +210,25 @@ def get_all_notams(departure_airport : str, arrival_airport : str, message_log :
     departure_point = PointObject.from_airport_code(departure_airport)
     arrival_point = PointObject.from_airport_code(arrival_airport)
 
-    point_list = get_points_between(departure_point, arrival_point, DEFAULT_PATH_STEP_SIZE_NM)
+    step_size = DEFAULT_PATH_STEP_SIZE_NM
+    request_radius = NOTAM_RADIUS
+    airport_distance = get_distance(departure_point, arrival_point)
+
+    if(airport_distance >= 1960):
+        step_size = find_min_step_size(airport_distance)
+        # By default, the step size was 80% of the radius*2.
+        # This results in an overlap of 20% between two given requests.
+        # request_radius = (step_size*1.2)/2
+        request_radius = math.floor(step_size*0.6)
+
+    point_list = get_points_between(departure_point, arrival_point, step_size)
 
     # point_list currently has only the in-flight points.
     # Add the departure and arrival points.
     point_list.insert(0, departure_point)
     point_list.append(arrival_point)
 
-    full_notam_list = get_notams_from_point_list(point_list, message_log)
+    full_notam_list = get_notams_from_point_list(point_list, request_radius, message_log)
 
     return sort_list.sort(full_notam_list, departure_airport, arrival_airport)
 
