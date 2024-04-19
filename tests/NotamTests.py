@@ -1,5 +1,5 @@
 import unittest
-import notamFetch
+import NotamFetch
 from NavigationTools import *
 from io import StringIO
 
@@ -15,14 +15,14 @@ class TestNotams(unittest.TestCase) :
     def test_inputs_valid_IATA(self):
         airport = "OKC"
         print("Testing IATA airport code input:")
-        self.assertTrue(notamFetch.is_valid_US_airport_code(airport, self.message_log), 
+        self.assertTrue(NotamFetch.is_valid_US_airport_code(airport, self.message_log), 
                             f"{airport} was not detected as valid.")
           
     # Checks to see if ICAO codes are valid inputs.  
     def test_inputs_valid_ICAO(self):
         airport = "KOKC"
         print("Testing ICAO airport code input:")
-        self.assertTrue(notamFetch.is_valid_US_airport_code(airport, self.message_log), 
+        self.assertTrue(NotamFetch.is_valid_US_airport_code(airport, self.message_log), 
                             f"{airport} was not detected as valid.")
         
     ## Tests involving invalid inputs in the frontend
@@ -32,20 +32,20 @@ class TestNotams(unittest.TestCase) :
         airport = None
         print("Testing no inputs:")
         with self.assertRaises(ValueError):
-            notamFetch.get_notams_at(airport, self.message_log)
+            NotamFetch.get_notams_at(airport, self.message_log)
             
     # Test should fail given a code with too few characters.
     def test_inputs_invalid_few_char(self):
         airport = "OK"
         print("Testing inputs fewer than 3:")
-        self.assertFalse(notamFetch.is_valid_US_airport_code(airport, self.message_log), 
+        self.assertFalse(NotamFetch.is_valid_US_airport_code(airport, self.message_log), 
                                 f"{airport} was detected as valid.")
         
     # Test should fail given a code with too many characters.
     def test_inputs_invalid_many_char(self):
         airport = "OKCDFW"
         print("Testing inputs greater than 4:")
-        self.assertFalse(notamFetch.is_valid_US_airport_code(airport, self.message_log), 
+        self.assertFalse(NotamFetch.is_valid_US_airport_code(airport, self.message_log), 
                             f"{airport} was detected as valid.")
         
     # Test other non-string inputs such as int and double:
@@ -53,13 +53,13 @@ class TestNotams(unittest.TestCase) :
         airport = 46
         print("Testing integer inputs:")
         with self.assertRaises(ValueError):
-            notamFetch.get_notams_at(airport, self.message_log)
+            NotamFetch.get_notams_at(airport, self.message_log)
 
     def test_inputs_invalid_float(self):
         airport = 35.3955
         print("Testing float decimal inputs:")
         with self.assertRaises(ValueError):
-            notamFetch.get_notams_at(airport, self.message_log)
+            NotamFetch.get_notams_at(airport, self.message_log)
 
     ## Tests involving invalid airport inputs:
             
@@ -69,26 +69,26 @@ class TestNotams(unittest.TestCase) :
         airport = "PAJN" # Juneau, AK
         print(f"Testing {airport}:")
         with self.assertRaises(Exception):
-            notamFetch.get_notams_at(airport, self.message_log)
+            NotamFetch.get_notams_at(airport, self.message_log)
 
     def test_hawaii_fail(self) :
         airport = "PHNL" # Honolulu, HI
         print(f"Testing {airport}:")
         with self.assertRaises(Exception):
-            notamFetch.get_notams_at(airport, self.message_log)
+            NotamFetch.get_notams_at(airport, self.message_log)
 
     # Check airports in North America (i.e. Canada, Mexico, etc.)
             
     def test_canada(self):
         airport = "CYOW" # Ottawa, Canada
         print(f"Testing {airport}:")
-        self.assertFalse(notamFetch.is_valid_US_airport_code(airport, self.message_log), 
+        self.assertFalse(NotamFetch.is_valid_US_airport_code(airport, self.message_log), 
                             f"{airport} was detected as a valid US airport.")
             
     def test_mexico(self):
         airport = "MMMX" # Mexico City, Mexico
         print(f"Testing {airport}:")
-        self.assertFalse(notamFetch.is_valid_US_airport_code(airport, self.message_log), 
+        self.assertFalse(NotamFetch.is_valid_US_airport_code(airport, self.message_log), 
                             f"{airport} was detected as a valid US airport.")
 
     # Check airports outside North America
@@ -96,7 +96,7 @@ class TestNotams(unittest.TestCase) :
     def test_germany_fail(self):
         airport = "EDDB" # Berlin, Germany
         print(f"Testing {airport}:")
-        self.assertFalse(notamFetch.is_valid_US_airport_code(airport, self.message_log), 
+        self.assertFalse(NotamFetch.is_valid_US_airport_code(airport, self.message_log), 
                             f"{airport} was detected as a valid US airport.")
 
     ## Tests getting all notams with valid airports:
@@ -108,7 +108,7 @@ class TestNotams(unittest.TestCase) :
         departure_airport = "KOKC" # Oklahoma City, OK
         print(f"Testing flight between {departure_airport} and {arrival_airport}:")
         try:
-            notamFetch.get_all_notams(departure_airport, arrival_airport, self.message_log)
+            NotamFetch.get_all_notams(departure_airport, arrival_airport, self.message_log)
         except ValueError as err:
             self.fail("Airport was flagged as being the wrong type when checked.")
 
@@ -120,6 +120,6 @@ class TestNotams(unittest.TestCase) :
         departure_airport = "KLAX" # Los Angeles, CA
         print(f"Testing flight between {departure_airport} and {arrival_airport}:")
         try:
-            notamFetch.get_all_notams(departure_airport, arrival_airport, self.message_log)
+            NotamFetch.get_all_notams(departure_airport, arrival_airport, self.message_log)
         except ValueError as err:
             self.fail("Airport was flagged as being the wrong type when checked.")
