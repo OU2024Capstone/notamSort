@@ -1,7 +1,7 @@
 from io import StringIO
 from flask import Flask, jsonify, request
 from flask import render_template
-import notamFetch
+import NotamFetch
 from flask_table import Table, Col
 
 app = Flask(__name__)
@@ -33,7 +33,7 @@ def query():
         print(f"Finding all NOTAMs on flight path from {departure_airport} to {arrival_airport}.", file=message_log)
 
         # call backend to retrieve list of notams
-        all_notams = notamFetch.get_all_notams(
+        all_notams = NotamFetch.get_all_notams(
             departure_airport = departure_airport, 
             arrival_airport = arrival_airport, message_log=message_log)
 
