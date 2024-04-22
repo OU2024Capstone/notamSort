@@ -32,7 +32,7 @@ class TestNotams(unittest.TestCase) :
         airport = None
         print("Testing no inputs:")
         with self.assertRaises(ValueError):
-            NotamFetch.get_notams_at(airport, self.message_log)
+            NotamFetch.get_notams_at(airport, 25, self.message_log)
             
     # Test should fail given a code with too few characters.
     def test_inputs_invalid_few_char(self):
@@ -53,13 +53,13 @@ class TestNotams(unittest.TestCase) :
         airport = 46
         print("Testing integer inputs:")
         with self.assertRaises(ValueError):
-            NotamFetch.get_notams_at(airport, self.message_log)
+            NotamFetch.get_notams_at(airport, 25, self.message_log)
 
     def test_inputs_invalid_float(self):
         airport = 35.3955
         print("Testing float decimal inputs:")
         with self.assertRaises(ValueError):
-            NotamFetch.get_notams_at(airport, self.message_log)
+            NotamFetch.get_notams_at(airport, 25, self.message_log)
 
     ## Tests involving invalid airport inputs:
             
@@ -69,13 +69,13 @@ class TestNotams(unittest.TestCase) :
         airport = "PAJN" # Juneau, AK
         print(f"Testing {airport}:")
         with self.assertRaises(Exception):
-            NotamFetch.get_notams_at(airport, self.message_log)
+            NotamFetch.get_notams_at(airport, 25, self.message_log)
 
     def test_hawaii_fail(self) :
         airport = "PHNL" # Honolulu, HI
         print(f"Testing {airport}:")
         with self.assertRaises(Exception):
-            NotamFetch.get_notams_at(airport, self.message_log)
+            NotamFetch.get_notams_at(airport, 25, self.message_log)
 
     # Check airports in North America (i.e. Canada, Mexico, etc.)
             

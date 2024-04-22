@@ -20,7 +20,7 @@ class TestHttpResponseStatusCodes( unittest.TestCase ):
     def test_authorized( self ):
         try:
             NotamFetch.credentials = self.credentials
-            NotamFetch.get_notams_at( self.COORDINATES, self.message_log )
+            NotamFetch.get_notams_at( self.COORDINATES, 25, self.message_log )
         except Exception as err:
             self.fail( "An exception was raised when it shouldn't have" )
         pass
@@ -29,7 +29,7 @@ class TestHttpResponseStatusCodes( unittest.TestCase ):
         good_credentials = NotamFetch.credentials
         with self.assertRaises( RuntimeError ) as context:
             NotamFetch.credentials = { "client_id": "bad_id", "client_secret": "bad_secret" }
-            NotamFetch.get_notams_at( self.COORDINATES, self.message_log )
+            NotamFetch.get_notams_at( self.COORDINATES, 25, self.message_log )
 
         self.assertTrue( "HTTP 401" in str(context.exception), f"Expected a 401 exception but got {str(context.exception)} instead" )
         NotamFetch.credentials = good_credentials
@@ -37,7 +37,7 @@ class TestHttpResponseStatusCodes( unittest.TestCase ):
     def test_bad_request( self ):
         with self.assertRaises( RuntimeError ) as context:
             NotamFetch.credentials = self.credentials
-            NotamFetch.get_notams_at( self.COORDINATES, message_log=self.message_log, additional_params={"pageSize":999999} )
+            NotamFetch.get_notams_at( self.COORDINATES, 25, message_log=self.message_log, additional_params={"pageSize":999999} )
 
         self.assertTrue( "Received error message" in str(context.exception), f"Expected an error message but got {str(context.exception)} instead" )
 
@@ -46,7 +46,7 @@ class TestHttpResponseStatusCodes( unittest.TestCase ):
         with self.assertRaises( RuntimeError ) as context:
             NotamFetch.credentials = self.credentials
             NotamFetch.FAA_API_ENTRYPOINT = f"{good_url}_OBVIOUSLY_BAD_URL"
-            NotamFetch.get_notams_at( self.COORDINATES , message_log = self.message_log)
+            NotamFetch.get_notams_at( self.COORDINATES, 25, message_log = self.message_log)
 
         self.assertTrue( "HTTP 404" in str(context.exception), f"Expected a 404 exception but got {str(context.exception)} instead" )
         NotamFetch.FAA_API_ENTRYPOINT = good_url
