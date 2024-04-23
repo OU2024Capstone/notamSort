@@ -33,7 +33,7 @@
             //Convert the table data to a json format
             var jsonText = JSON.stringify(tableData, null, 2);
             var blob = new Blob([jsonText], { type: "application/json;charset=utf-8" });
-            saveAs(blob, "table_data.json");
+            saveAs(blob, "{{ DepartureAirport }} 🡢 {{ ArrivalAirport }}.json");
         }
 
         // This function is for compatibility with older versions of Internet Explorer
