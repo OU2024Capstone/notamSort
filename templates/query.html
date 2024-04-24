@@ -1,13 +1,62 @@
-<!-- this is the html to display notams, very barebones currently -->
 <!DOCTYPE html>
 <html>
+<head>
     <!-- All table cells are text-aligned to the top. -->
-    <style type=text/css>
+    <style type="text/css">
         table td, table td * { vertical-align: top;}
     </style>
-
+</head>
+<body>
     <p> {{ DepartureAirport }} 🡢 {{ ArrivalAirport }} </p>
     {% if table is not none %}
+    <button onclick="downloadTableAsJson()">Download as JSON</button>
         {{ table }}
     {% endif %}
+
+    <script>
+        function downloadTableAsJson() {
+            var tableData = [];
+            var headers = [];
+            // Get column headers
+            document.querySelectorAll('table th').forEach(function(header) {
+                headers.push(header.innerText.trim());
+            });
+            //Get table rows
+            var rows = document.querySelectorAll('table tr');
+            rows.forEach(function(row, rowIndex) {
+                var rowData = {};
+                row.querySelectorAll('td').forEach(function(cell, cellIndex) {
+                    rowData[headers[cellIndex]] = cell.innerText.trim();
+                });
+                tableData.push(rowData);
+            });
+            //Convert the table data to a json format
+            var jsonText = JSON.stringify(tableData, null, 2);
+            var blob = new Blob([jsonText], { type: "application/json;charset=utf-8" });
+            saveAs(blob, "{{ DepartureAirport }} 🡢 {{ ArrivalAirport }}.json");
+        }
+
+        // This function is for compatibility with older versions of Internet Explorer
+        function saveAs(blob, filename) 
+        {
+            if (navigator.msSaveOrOpenBlob) 
+            {
+                navigator.msSaveOrOpenBlob(blob, filename);
+            } 
+            else 
+            {
+                var a = document.createElement('a');
+                var url = URL.createObjectURL(blob);
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function() {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 0);
+            }
+        }
+    </script>
+</body>
 </html>
