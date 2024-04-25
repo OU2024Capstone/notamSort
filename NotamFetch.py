@@ -10,6 +10,8 @@ import NotamSort
 from NavigationTools import *
 from io import StringIO
 import concurrent.futures
+import plotly.graph_objects as go
+figure = go.Figure()
 
 # link to the FAA API
 FAA_API_ENTRYPOINT = "https://external-api.faa.gov/notamapi/v1/notams"
@@ -167,6 +169,8 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
             if(request.done()):
                 notam_list += request.result()
                 thread_list.remove(request)
+
+    build_map(point_list)
     
     return notam_list
 
@@ -337,3 +341,41 @@ def is_valid_US_airport_code(user_input : str, message_log : StringIO) -> bool:
         return True
     else:
         return False
+    
+
+
+def build_map(point_list : list) :
+    longitudes = [p.longitude for p in point_list]
+    latitudes = [p.latitude for p in point_list]
+    figure.add_trace(go.Scattergeo(
+        lon=[*longitudes],
+        lat=[*latitudes],
+        mode = 'lines+markers',
+        line = dict(width = 1,color = 'red'),
+    ))
+
+    figure.update_layout(
+        showlegend=False,
+        margin=dict(l=10,r=10,t=10,b=10),
+        geo = dict(
+            scope = 'north america',
+            projection_type = 'azimuthal equal area',
+            #projection_scale=2.25,
+            resolution=50,
+            center_lat=point_list[0].latitude,
+            center_lon=point_list[0].longitude,
+            showland = True,
+            showcountries=True,
+            landcolor = 'rgb(243, 243, 243)',
+            countrycolor = 'rgb(160, 160, 160)',
+        )
+    )
+
+def get_map() :
+    # Get map
+    return figure
+
+def clear_map():
+    # Reset the map
+    global figure
+    figure = go.Figure()

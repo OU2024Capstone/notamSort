@@ -7,6 +7,7 @@ from flask_table import Table, Col
 app = Flask(__name__)
 # All print statements write to output, which is displayed on the homepage.
 message_log = StringIO()
+figure = None
 
 # Home displays the form for user input
 @app.route("/")
@@ -26,6 +27,7 @@ def query():
     """
     if request.method == 'POST':
         clear_log()
+        NotamFetch.clear_map()
         
         departure_airport = request.form['DepartureAirport']
         arrival_airport = request.form['ArrivalAirport']
@@ -36,8 +38,11 @@ def query():
         all_notams = NotamFetch.get_all_notams(
             departure_airport = departure_airport, 
             arrival_airport = arrival_airport, message_log=message_log)
+        
+        figure = NotamFetch.get_map()
 
         return render_template('query.html', 
+                               figure = figure,
                                table = NotamTable(all_notams, border='1px solid black'),
                                DepartureAirport = departure_airport, 
                                ArrivalAirport = arrival_airport)
@@ -86,7 +91,3 @@ class NotamTable(Table):
     effective_end = Col('Effective End')
     text = TextCol('Description')
     type = Col('Type')
-    selection_code = Col('Selection Code')
-    traffic = Col('Traffic')
-    purpose = Col('Purpose')
-    score = Col('Score')
