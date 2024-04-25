@@ -24,6 +24,13 @@ class RatingSort(SortStategyInterface):
         notam_list.sort(key=lambda x: x.score, reverse=True)
 
         return notam_list
+    
+    def is_float(self, value):
+        try:
+            float(value)
+            return True
+        except ValueError:
+            return False
 
     # Designate scores to the given notams for later sorting
     def scoring(self, notam_list, departure, arrival):
@@ -77,8 +84,10 @@ class RatingSort(SortStategyInterface):
                 for char in str(notam.scope):
                     score += scope['MaxValue'] / scope['dataScores'].get(char, 0)
 
-            if notam.radius != None:
+            if notam.radius != None and self.is_float(notam.radius):
                 score += float(notam.radius)
+            elif "IC" in str(notam.radius):
+                score += 200
 
             # Selection codes are determined by pairs of characters
             # Characters 2 and 3 can determine subject being reported
