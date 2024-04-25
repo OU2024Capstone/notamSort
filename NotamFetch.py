@@ -11,6 +11,7 @@ from NavigationTools import *
 from io import StringIO
 import concurrent.futures
 import plotly.graph_objects as go
+from datetime import datetime
 figure = go.Figure()
 
 # link to the FAA API
@@ -236,6 +237,18 @@ def get_all_notams(departure_airport : str, arrival_airport : str, message_log :
     point_list.append(arrival_point)
 
     full_notam_list = get_notams_from_point_list(point_list, request_radius, message_log)
+
+    #Iterate through the notams to find notams that have already ended
+    for notam in full_notam_list.copy():
+        today = datetime.utcnow()
+        try:
+            if(notam.effective_end != "PERM"):
+                given_date = datetime.strptime(notam.effective_end, "%Y-%m-%dT%H:%M:%S.%fZ")
+                if given_date <= today:
+                    full_notam_list.remove(notam)
+        except Exception as e:
+            #If there is any format besides the date or a Permanent notam
+            print(e)
 
     return sort_list.sort(full_notam_list, departure_airport, arrival_airport)
 
