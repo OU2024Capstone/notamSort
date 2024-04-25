@@ -41,6 +41,7 @@ def query():
         
         figure = NotamFetch.get_map()
 
+        clear_log()
         return render_template('query.html', 
                                figure = figure,
                                table = NotamTable(all_notams, border='1px solid black'),
@@ -49,6 +50,7 @@ def query():
 
 @app.errorhandler(Exception)
 def handle_backend_errors(e):
+        clear_log()
         return render_template("error.html", error_message = e)
 
 @app.route('/out', methods=['GET'])
