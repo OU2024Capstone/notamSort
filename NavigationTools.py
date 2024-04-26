@@ -1,16 +1,16 @@
 import math
 import geopy.distance
-from geopy.geocoders import Nominatim
-from geopy.exc import *
 from io import StringIO
+from json import load
+from os import path
 
-import geopy.location
-
-GEOLOCATOR = Nominatim(user_agent="notam_sort")
+# File name for database file
+DATABASE_FILE_DIR = "database/Airports.json"
 # radius of the earth in nautical miles
 EARTH_RADIUS = 3443.89849
 # conversion factor between miles and nautical miles
 NM_TO_MILES = 1.151
+database = None
 
 class PointObject :
     """
@@ -48,20 +48,40 @@ class PointObject :
             raise TypeError(f"Error: Location is of the wrong type, expected str and got {type(location)}")
         else :
             try :
-                location_geocode = cls.get_valid_US_airport(location, message_log)
-            except GeopyError as err:
+                output_location = get_valid_US_airport(location, message_log)
+            except ValueError as err:
                 raise err
-            if location_geocode == None:
-                raise TypeError(f"Error: The geocoder was not able to find a result for the following location: {location}")
+            if output_location == None:
+                raise TypeError(f"Error: The database was not able to find a result for the following location: {location}")
 
             else :
-                latitude = location_geocode.latitude
-                longitude = location_geocode.longitude
+                latitude = output_location[0]
+                longitude = output_location[1]
                 return cls(latitude, longitude)
-    
-    @classmethod
-    def get_valid_US_airport(cls, user_input : str, message_log : StringIO) -> geopy.location.Location:
-        """ Get the first US airport that is given from a Nominatim request.
+
+    def __str__(self) :
+        return f"Latitude: {self.latitude}, Longitude: {self.longitude}"
+
+def load_database_file() -> None:
+        """
+        Reads the local data base file and creates a dictionary from it.
+        """
+        global database
+
+        if database is None:
+
+            if not path.exists(DATABASE_FILE_DIR):
+                raise FileNotFoundError(f"No database found! A file is expected at {DATABASE_FILE_DIR} relative to where this app was run.")
+
+            file = open(DATABASE_FILE_DIR)
+            database = load(file)
+            database = database["features"]
+
+            file.close()   
+
+def get_valid_US_airport(user_input : str, message_log : StringIO) -> tuple:
+        """ Get the first US airport that is found within the database 
+            that matches the string supplied.
 
         Parameters
         ----------
@@ -73,46 +93,42 @@ class PointObject :
 
         Returns
         -------
-        geopy.location.Location
-            The location of the airport found from the string
+        tuple
+            The latitude and longitude of the airport
         """
 
-        # Only accecpt 4-character or 3-character strings
-        if(len(user_input) > 4 or len(user_input) < 3):
-            print(f"'{user_input}' must be in either ICAO or IATA format.", file=message_log)
-            return False
+        if len(user_input) == 4 or len(user_input) == 3:
+            for airport in database:
+                # Get the two airport codes.
+                # IDENT covers both IATA and the FAA identifiers
+                airport_properties = airport["properties"]
+                curr_airport_code_IATA_FAA = airport_properties["IDENT"]
+                curr_airport_code_ICAO = airport_properties["ICAO_ID"]
+
+                is_IATA_FAA_code = curr_airport_code_IATA_FAA is not None and curr_airport_code_IATA_FAA.upper() == user_input.upper()
+                is_ICAO_code = curr_airport_code_ICAO is not None and curr_airport_code_ICAO.upper() == user_input.upper()
+                
+                # Was using the US_HIGH, US_LOW, etc. identifiers before, but some of the airports are mislabeled
+                # For example, WA and OR airports could be labeled as PACIFIC airports. 
+                # Some AK airports have both AK_HIGH an AK_LOW set to 0.
+                # Instead of looking for every edge case, just check the two states that don't need to be included
+                is_in_US_mainland = (airport_properties["COUNTRY"] == "UNITED STATES" 
+                                     and not (airport_properties["STATE"] == "AK" or airport_properties["STATE"] == "HI")) 
+
+                if is_in_US_mainland and (is_ICAO_code or is_IATA_FAA_code):
+                    # coordinates contains a list of the longitude, latitude, and altitude
+                    # Altitude is weirdly not used, however.
+                    airport_lat = airport["geometry"]["coordinates"][1]
+                    airport_long = airport["geometry"]["coordinates"][0]
+                    return (airport_lat, airport_long)
+                
+                elif not is_in_US_mainland and (is_ICAO_code or is_IATA_FAA_code):
+                    raise ValueError(f"Airport must be in the continental United States, got {user_input} instead.")
+
+        else:
+            raise ValueError(f"Airport code is expected to be in IATA, ICAO, or FAA forms, got {user_input} instead")
         
-        code_format = 'iata' if len(user_input) == 3 else 'icao'
-        geocode_query = f"{user_input.upper()} Airport"
-        geocoder_results = None
-        airport = None
-
-        # namedetails provides the ICAO/IATA code from the geocode results, which
-        # are not returned by default. exactly_one is set to false because 
-        # airport codes are not prioritzed in Nominatim, and we want to 
-        # watch out for any cases where a non-airport location is the first
-        # search result.
-        try:
-            geocoder_results = GEOLOCATOR.geocode(geocode_query, exactly_one=False, namedetails=True, country_codes="US" )
-        except GeopyError as error_message:
-            print(f"Error: geocode failed with message '{error_message}'.", file=message_log)
-
-        # Get only the locations that are classified as an aeroway with an 
-        # ICAO/IATA code matching the user's input. If none exist, the input was
-        # not a valid US airport code.
-        # In Nominatim, all airports are classified as an aeroway.
-        # casefold() => Used for case-insensitive string comparison.
-        if geocoder_results is not None:
-            airport = next(filter(lambda location: 
-                                location.raw.get('class') =='aeroway' and 
-                                location.raw.get('namedetails').get(code_format).casefold() == user_input.casefold(), 
-                                geocoder_results), None)
-
-        return airport
-
-    def __str__(self) :
-        return f"Latitude: {self.latitude}, Longitude: {self.longitude}"
-
+        return None
 
 def get_distance(point_one: PointObject, point_two: PointObject) :
     """
@@ -267,3 +283,6 @@ def get_next_point_manual(point: PointObject, bearing: float, distance: float | 
     next_longitude = math.degrees(next_longitude_radians)
     next_point = PointObject(next_latitude, next_longitude)
     return next_point
+
+# Initialize database
+load_database_file()

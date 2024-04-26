@@ -34,22 +34,33 @@ class TestNotams(unittest.TestCase) :
     def test_inputs_invalid_none(self):
         airport = None
         print("Testing no inputs:")
-        with self.assertRaises(ValueError):
+        try:
             NotamFetch.get_notams_at(airport, 25, self.dummy_output)
+            self.fail("Airport was flagged as being the wrong type when checked.")
+        except ValueError as err:
+            pass
+            
             
     # Test should fail given a code with too few characters.
     def test_inputs_invalid_few_char(self):
         airport = "OK"
         print("Testing inputs fewer than 3:")
-        self.assertFalse(NotamFetch.is_valid_US_airport_code(airport, self.dummy_output), 
-                                f"{airport} was detected as valid.")
+        try:
+            NotamFetch.is_valid_US_airport_code(airport, self.dummy_output)
+            self.fail("Airport was detected as valid.")
+        except ValueError as err:
+            pass
+            
         
     # Test should fail given a code with too many characters.
     def test_inputs_invalid_many_char(self):
         airport = "OKCDFW"
         print("Testing inputs greater than 4:")
-        self.assertFalse(NotamFetch.is_valid_US_airport_code(airport, self.dummy_output), 
-                            f"{airport} was detected as valid.")
+        try:
+            NotamFetch.is_valid_US_airport_code(airport, self.dummy_output)
+            self.fail("Airport was detected as valid.")
+        except ValueError as err:
+            pass
         
     # Test other non-string inputs such as int and double:
     def test_inputs_invalid_int(self):
@@ -85,8 +96,11 @@ class TestNotams(unittest.TestCase) :
     def test_canada(self):
         airport = "CYOW" # Ottawa, Canada
         print(f"Testing {airport}:")
-        self.assertFalse(NotamFetch.is_valid_US_airport_code(airport, self.dummy_output), 
-                            f"{airport} was detected as a valid US airport.")
+        try:
+            NotamFetch.is_valid_US_airport_code(airport, self.dummy_output)
+            self.fail("Airport was detected as valid.")
+        except ValueError as err:
+            pass
             
     def test_mexico(self):
         airport = "MMMX" # Mexico City, Mexico

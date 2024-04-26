@@ -2,8 +2,6 @@ import requests
 import json
 import os
 import sys
-from geopy.geocoders import Nominatim
-from geopy import exc
 from dotenv import load_dotenv
 from Notam import Notam
 import NotamSort
@@ -22,13 +20,14 @@ DEFAULT_PATH_STEP_SIZE_NM = 40
 MAX_NOTAMS = 1000
 # radius around the flight path to get NOTAMs
 NOTAM_RADIUS = 25
-
-# geolocator API agent for coordinates
-GEOLOCATOR = Nominatim(user_agent="notam_sort")
+# blank default parameters for the API
+NOTAM_REQUEST_PARAMS = {
+    "pageSize" : str(MAX_NOTAMS),
+    "locationRadius" : str(NOTAM_RADIUS),
+}
 
 # client's credentials to the FAA API
 credentials = None
-
 
 def load_credentials() -> dict:
     """Returns the client's credentials for querying the FAA's API. 
@@ -64,6 +63,7 @@ def load_credentials() -> dict:
         "client_id": client_id,
         "client_secret": client_secret,
     }
+
 
 def get_notams_at(request_location : PointObject, request_radius : int, message_log : StringIO, additional_params = {}) -> list:
     """ 
@@ -149,6 +149,7 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
         raise RuntimeError(f"Flight path is too long, attempting to send {len(point_list)} requests which is over the {MAX_NUMBER_OF_THREADS} request limit! Not all NOTAMs can be retrieved from the FAA API server!")
 
     thread_list = []
+
     # Creates a thread pool which executes until all of the threads are finished
     with concurrent.futures.ThreadPoolExecutor() as executor:
 
@@ -159,6 +160,7 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
 
 
     notam_list = []
+
     # Each request has a list of notams, so concatenate each thread's output into the notam list
     while len(thread_list) > 0:
         thread_list_copy = thread_list.copy()
@@ -320,42 +322,10 @@ def is_valid_US_airport_code(user_input : str, message_log : StringIO) -> bool:
         Whether user_input is a valid ICAO/IATA US airport code or not.
     """
 
-    # Only accecpt 4-character or 3-character strings
-    if(len(user_input) > 4 or len(user_input) < 3):
-        print(f"'{user_input}' must be in either ICAO or IATA format.", file=message_log)
-        return False
-    
-    code_format = 'iata' if len(user_input) == 3 else 'icao'
-    geocode_query = f"{user_input.upper()} Airport"
-    geocoder_results = None
-    airport = None
-
-    # namedetails provides the ICAO/IATA code from the geocode results, which
-    # are not returned by default. exactly_one is set to false because 
-    # airport codes are not prioritzed in Nominatim, and we want to 
-    # watch out for any cases where a non-airport location is the first
-    # search result.
-    try:
-        geocoder_results = GEOLOCATOR.geocode(geocode_query, exactly_one=False, namedetails=True, country_codes="US" )
-    except GeopyError as error_message:
-        print(f"Error: geocode failed with message '{error_message}'.", file=message_log)
-
-    # Get only the locations that are classified as an aeroway with an 
-    # ICAO/IATA code matching the user's input. If none exist, the input was
-    # not a valid US airport code.
-    # In Nominatim, all airports are classified as an aeroway.
-    # casefold() => Used for case-insensitive string comparison.
-    if geocoder_results is not None:
-        airport = next(filter(lambda location: 
-                            location.raw.get('class') =='aeroway' and 
-                            location.raw.get('namedetails').get(code_format).casefold() == user_input.casefold(), 
-                            geocoder_results), None)
-
-    if airport:
+    if get_valid_US_airport(user_input, message_log):
         return True
     else:
         return False
-    
 
 
 def build_map(point_list : list) :
