@@ -1,5 +1,6 @@
 {
    "MaxValue": 100,
+   "MinValue": 40,
    "Category": "Type",
    "dataScores": {
       "N": 1,
