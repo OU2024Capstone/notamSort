@@ -21,11 +21,7 @@ DEFAULT_PATH_STEP_SIZE_NM = 40
 MAX_NOTAMS = 1000
 # radius around the flight path to get NOTAMs
 NOTAM_RADIUS = 25
-# blank default parameters for the API
-NOTAM_REQUEST_PARAMS = {
-    "pageSize" : str(MAX_NOTAMS),
-    "locationRadius" : str(NOTAM_RADIUS),
-}
+
 # geolocator API agent for coordinates
 GEOLOCATOR = Nominatim(user_agent="notam_sort")
 
@@ -79,9 +75,14 @@ def get_notams_at(request_location : PointObject, request_radius : int, message_
     if not(isinstance(additional_params, dict)):
         raise ValueError(f"Error: additional_params is of invalid type, expected dict got {type(additional_params)}")
 
-    NOTAM_REQUEST_PARAMS.update({"locationLatitude" : str(request_location.latitude)})
-    NOTAM_REQUEST_PARAMS.update({"locationLongitude" : str(request_location.longitude)})
-    NOTAM_REQUEST_PARAMS.update({"locationRadius" : str(request_radius)})
+    # blank default parameters for the API
+    NOTAM_REQUEST_PARAMS = {
+        "pageSize" : str(MAX_NOTAMS),
+        "locationRadius" : str(request_radius),
+        "locationLatitude" : str(request_location.latitude),
+        "locationLongitude" : str(request_location.longitude),
+    }
+
     NOTAM_REQUEST_PARAMS.update(additional_params)
 
     notam_list = []
