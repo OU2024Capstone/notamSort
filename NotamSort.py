@@ -49,16 +49,26 @@ class RatingSort(SortStategyInterface):
 
             if notam.type != None:
                 type = json.load(open('./ranking/Type.json'))
-                score += type['MaxValue'] / type['dataScores'].get(notam.type, 0)
+                try:
+                    score += type['MaxValue'] / type['dataScores'].get(notam.type, 0)
+                except (ZeroDivisionError, KeyError):
+                    score += type['MinValue']
 
             # scoring based on days since date issued
             given_date = datetime.strptime(notam.issued, "%Y-%m-%dT%H:%M:%S.%fZ")
             difference = given_date - today
             difference_in_days = abs(difference.days)
-            score += 10 / difference_in_days
+            try:
+                score += 10 / difference_in_days
+            except (ZeroDivisionError):
+                # provide a score higher in the case current date is exactly issued date
+                score += 11
 
             if notam.classification != None:
-                score += classification['MaxValue'] / classification['dataScores'].get(notam.classification, 0)
+                try:
+                    score += classification['MaxValue'] / classification['dataScores'].get(notam.classification, 0)
+                except (ZeroDivisionError, KeyError):
+                    score += classification['MinValue']
 
             # large score boost for arrival and departure related notams
             if notam.location == departure or notam.icao_location == departure:
@@ -69,7 +79,10 @@ class RatingSort(SortStategyInterface):
             if notam.traffic != None:
                 # parse through multiple character property
                 for char in str(notam.traffic):
-                    score += traffic['MaxValue'] / traffic['dataScores'].get(char, 0)
+                    try:
+                        score += traffic['MaxValue'] / traffic['dataScores'].get(char, 0)
+                    except (ZeroDivisionError, KeyError):
+                        score += traffic['MinValue']
 
             if notam.purpose != None:
                 if notam.purpose == "SCHEDULED":
@@ -77,12 +90,18 @@ class RatingSort(SortStategyInterface):
                 else:
                     # parse through multiple character property
                     for char in str(notam.purpose):
-                        score += purpose['MaxValue'] / purpose['dataScores'].get(char, 0)
+                        try:
+                            score += purpose['MaxValue'] / purpose['dataScores'].get(char, 0)
+                        except (ZeroDivisionError, KeyError):
+                            score += purpose['MinValue']
 
             if notam.scope != None:
                 # parse through multiple character property
                 for char in str(notam.scope):
-                    score += scope['MaxValue'] / scope['dataScores'].get(char, 0)
+                    try:
+                        score += scope['MaxValue'] / scope['dataScores'].get(char, 0)
+                    except (ZeroDivisionError, KeyError):
+                        score += scope['MinValue']
 
             if notam.radius != None and self.is_float(notam.radius):
                 score += float(notam.radius)
@@ -98,21 +117,26 @@ class RatingSort(SortStategyInterface):
                 
                 char2 = notam.selection_code[1]
                 char3 = notam.selection_code[2]
-                if char2 != 'X':
 
+                try:
                     category_rank = selection_code23['SubCategories'][char2].get('categoryRank', 0)
                     subsub_category = selection_code23['SubCategories'][char2].get(char3, 0)
 
                     score += selection_code23['MinValue'] + ( selection_code23['MaxValue']- selection_code23['MinValue'] ) * (1 / category_rank) * (1 / subsub_category)
+                except (ZeroDivisionError, KeyError):
+                    score += selection_code23['MinValue']
 
                 # characters 4 and 5
                 char4 = notam.selection_code[3]
                 char5 = notam.selection_code[4]
 
-                category_rank = selection_code45['SubCategories'][char4].get('categoryRank', 0)
-                subsub_category = selection_code45['SubCategories'][char4].get(char5, 0)
+                try:
+                    category_rank = selection_code45['SubCategories'][char4].get('categoryRank', 0)
+                    subsub_category = selection_code45['SubCategories'][char4].get(char5, 0)
 
-                score += selection_code45['MinValue'] + ( selection_code45['MaxValue']- selection_code45['MinValue'] ) * (1 / category_rank) * (1 / subsub_category)
+                    score += selection_code45['MinValue'] + ( selection_code45['MaxValue']- selection_code45['MinValue'] ) * (1 / category_rank) * (1 / subsub_category)
+                except (ZeroDivisionError, KeyError):
+                    score += selection_code45['MinValue']
 
             notam.score = score
             # print(notam.score)

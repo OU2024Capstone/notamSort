@@ -1,5 +1,6 @@
 {
    "MaxValue": 250,
+   "MinValue": 30,
    "Category": "Purpose",
    "dataScores": {
       "N": 1,

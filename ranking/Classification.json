@@ -1,11 +1,12 @@
 {
-"MaxValue":150,
-   "Category":"Classification",
-   "dataScores":{
-      "DOM":1,
-      "FDC":2,
-      "INTL":3,
-      "MIL":4,
-      "LMIL":5
+   "MaxValue": 150,
+   "MinValue": 20,
+   "Category": "Classification",
+   "dataScores": {
+      "DOM": 1,
+      "FDC": 2,
+      "INTL": 3,
+      "MIL": 4,
+      "LMIL": 5
    }
 }

@@ -91,7 +91,3 @@ class NotamTable(Table):
     effective_end = Col('Effective End')
     text = TextCol('Description')
     type = Col('Type')
-    selection_code = Col('Selection Code')
-    traffic = Col('Traffic')
-    purpose = Col('Purpose')
-    score = Col('Score')
