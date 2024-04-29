@@ -43,7 +43,18 @@ class Notam:
         self.scope = notam_properties.get(Notam.SCOPE)
         self.radius = notam_properties.get(Notam.RADIUS)
         self.selection_code = notam_properties.get(Notam.SELECTION_CODE)
-            
+
+    # If two NOTAMs share the same number, they are considered to be the same NOTAM.
+    def __eq__(self, other):
+        # Only compare other Notam objects
+        if not isinstance(other, Notam):
+             return False;
+        return self.number == other.number
+    
+    # The number attribute is chosen for the hash as it is a unique value.
+    def __hash__(self):
+            return hash(self.number)
+        
     def __str__(self):
         """Returns a string representing the notam object in the form
             [number] variable : value
@@ -56,3 +67,7 @@ class Notam:
         for item in notam_vars:
             output += f"[{self.number}] {item}: {notam_vars[item]}\n"
         return output
+    
+    # To print NOTAMs in a list or set.
+    def __repr__(self):
+        return str(self)

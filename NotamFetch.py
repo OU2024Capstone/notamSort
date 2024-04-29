@@ -64,8 +64,7 @@ def load_credentials() -> dict:
         "client_secret": client_secret,
     }
 
-
-def get_notams_at(request_location : PointObject, request_radius : int, message_log : StringIO, additional_params = {}) -> list:
+def get_notams_at(request_location : PointObject, request_radius : int, message_log : StringIO, additional_params = {}) -> set:
     """ 
     This function takes the notam request, requests the api for the notams, and then returns the output.
     request_latitude_longitude expects to be a PointObject object containing the parameters 'latitude' and 'longitude' and contain type float values
@@ -86,7 +85,8 @@ def get_notams_at(request_location : PointObject, request_radius : int, message_
 
     NOTAM_REQUEST_PARAMS.update(additional_params)
 
-    notam_list = []
+    # set() Will only contain unique elements.
+    notam_set = set()
     num_pages = 1
     current_page = 1
     while current_page <= num_pages :
@@ -113,20 +113,21 @@ def get_notams_at(request_location : PointObject, request_radius : int, message_
             raise RuntimeError( f"Received error message from FAA API: {api_response_json['message']}" )
         
         num_pages = api_response_json.get("totalPages")
-        num_notams = api_response_json.get("totalCount")
+        total_notams_count = api_response_json.get("totalCount")
         returned_notam_list = api_response_json.get("items")
+        returned_notam_count = len(returned_notam_list)
         for notam in returned_notam_list:
             # Create a Notam object and append to the notam list. The Notam
             # class contains constants to get specific properties from the 
             # FAA api easily.
-            notam_list.append(Notam(notam))
+            notam_set.add(Notam(notam))
         
         print(f"Found {len(returned_notam_list)} notams at {request_location}", file=message_log)
         current_page += 1
 
-    if (len(notam_list) < num_notams) :
-        raise RuntimeError(f"Unable to retrieve all notams at {request_location}, expected {num_notams} and got {len(notam_list)}")
-    return notam_list
+    if (returned_notam_count < total_notams_count) :
+        raise RuntimeError(f"Unable to retrieve all notams at {request_location}, expected {total_notams_count} and got {returned_notam_count}")
+    return notam_set
 
 def get_notams_from_point_list(point_list : list, request_radius : int, message_log : StringIO) -> list:
     """
@@ -158,8 +159,9 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
             thread = executor.submit(get_notams_at, point, request_radius, message_log)
             thread_list.append(thread)
 
-
-    notam_list = []
+    # We start off with a set to avoid duplicate NOTAMs, 
+    # but will convert and return a list, as sets cannot be sorted.
+    notam_set = set()
 
     # Each request has a list of notams, so concatenate each thread's output into the notam list
     while len(thread_list) > 0:
@@ -171,12 +173,12 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
             # Only check threads that are done.
             # Remove threads after retrieving their data.
             if(request.done()):
-                notam_list += request.result()
+                notam_set.update(request.result())
                 thread_list.remove(request)
 
     build_map(point_list)
     
-    return notam_list
+    return list(notam_set) #return as list to allow sorting
 
 def find_min_step_size(airport_distance : float):
     """
