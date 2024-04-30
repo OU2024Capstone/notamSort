@@ -23,6 +23,9 @@ MAX_NOTAMS = 1000
 NOTAM_RADIUS = 25
 # max number of retries before quitting our program
 MAX_API_ATTEMPTS = 3
+# How long to wait before calling the API after reaching the usage limit
+# Values less than 60 will still work but have a NOTAMS chance to fail multiple times
+API_COOLDOWN = 60
 # blank default parameters for the API
 NOTAM_REQUEST_PARAMS = {
     "pageSize" : str(MAX_NOTAMS),
@@ -169,7 +172,6 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
     notam_set = set()
     attempts = 0
     is_api_refreshed = False
-    # save the failed points for multiple attempts
     failed_point_list = []
     # Each request has a list of notams, so concatenate each thread's output into the notam list
     # each loop adds failed threads backs to the thread_list
@@ -183,34 +185,32 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
             if(request.done()):
                 result = request.result()
                 # check for a valid return from the API
-                # if the return is invalid we return the response code
+                # if the return is invalid we expect the response code
                 if (not isinstance(result, int)) :
                     notam_set.update(result)
                 # if we get anything other than a list handle the response code appropriately
                 elif (attempts < MAX_API_ATTEMPTS) :
-                    if (len(failed_point_list) > 0) :
-                        failed_point = failed_point_list.pop(i)
-                        failed_point_list.insert(i, failed_point)
+                    if (len(failed_point_list) > 0 and attempts > 0) :
+                        failed_point = failed_point_list[i]
                     else :
-                        failed_point = point_list.pop(i)
-                        point_list.insert(i, failed_point)
+                        failed_point = point_list[i]
                         failed_point_list.append(failed_point)
+                    
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         # special behavior for 429 response code
                         if (result == 429 and not is_api_refreshed) :
                             # wait for the API limit to refresh before calling it again
-                            print(f"Maximum number of API calls made, please wait 60 seconds...", file=message_log)
-                            time.sleep(60)
+                            print(f"Maximum number of API calls made, please wait {API_COOLDOWN} seconds...", file=message_log)
+                            time.sleep(API_COOLDOWN)
                             is_api_refreshed = True
                         # re-submit the thread
-                        # TODO attempt limit for non-API call limit related fails not implemented
                         new_thread = executor.submit(get_notams_at, failed_point, request_radius, message_log)
                         thread_list.append(new_thread)
                 else :
                     # if we go over the attempt limit
-                    raise RuntimeError(f"Attempts to retry the failed API calls failed")
-                # remove the checked thread
+                    raise RuntimeError(f"Attempts to retry the failed API calls were not successful")
                 thread_list.remove(request)
+        is_api_refreshed = False
         attempts += 1
 
     build_map(point_list)
