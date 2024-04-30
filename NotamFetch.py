@@ -106,10 +106,8 @@ def get_notams_at(request_location : PointObject, request_radius : int, message_
             raise RuntimeError( f"HTTP 404 return code from FAA API. Has the URL moved? Accessed url \"{FAA_API_ENTRYPOINT}\"" )
         if api_response.status_code == 429:
             return api_response.status_code
-            raise RuntimeError( f"HTTP 429 return code from FAA API. Your request limit has been reached, please wait 1 minute and try again." )
         if api_response.status_code != 200:
             return api_response.status_code
-            raise RuntimeError( f"Received non-HTTP 200 status code {api_response.status_code} from FAA API" )
 
         api_response_json = json.loads(api_response.text)
 
