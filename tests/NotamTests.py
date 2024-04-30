@@ -238,3 +238,27 @@ class TestNotamSpeed(unittest.TestCase) :
             self.fail(f"get_all_notams was not able to complete in less than 30 seconds given {arrival_airport} and {departure_airport}. Time elapsed: {run_time}")
         else :
             print(f"Elapsed time to find notams between {arrival_airport} and {departure_airport}: {run_time}")
+            
+# Make sure to run `python3 -m unittest tests.NotamTests.TestNotamLocations` to run the tests in this class.
+class TestNotamLocations(unittest.TestCase) :
+    
+    def test_locations(self) :
+        # Will not actually be used, but needs to be passed as an argument in notamFetch.
+        dummy_output = StringIO()
+        
+        # Airports were found by using https://www.airnav.com/airports/
+        airports = ["LAX", "PWM", "1k4", "1k5", "KOJC", "08R", "00f", "KCII", "2T2", "C81",
+                    "KORD", "KCPS", "KLIT", "2A2", "KPSK", "W96", "W13", "1O1", "KWWR", "KDRM",
+                    "DTW", "KFNT", "6Y6", "C44", "W16", "16W", "KMEM", "0A3", "DAL", "OKC",
+                    "L19", "IQ4", "SAN", "SLC", "KCDC", "JFK", "KIAG", "IAG", "RNO", "3NL",
+                    "BRO", "AUG", "ME6", "KRAP", "9D2", "KDCA", "82V", "CYS", "KMIC", "VNC"]
+        
+        try :
+            for airport in airports :
+                # Comment/Uncomment if you want to see which airport gets tested.
+                # print(f"Testing: {airport}")
+                get_valid_US_airport(airport, dummy_output)
+        except ValueError as err:
+            print(f"Error raised when looking for the following airport: {airport}")
+            raise err
+        
