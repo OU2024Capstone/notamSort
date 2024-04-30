@@ -169,7 +169,10 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
     notam_set = set()
     attempts = 0
     is_api_refreshed = False
+    # save the failed points for multiple attempts
+    failed_point_list = []
     # Each request has a list of notams, so concatenate each thread's output into the notam list
+    # each loop adds failed threads backs to the thread_list
     while len(thread_list) > 0:
         thread_list_copy = thread_list.copy()
 
@@ -185,8 +188,13 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
                     notam_set.update(result)
                 # if we get anything other than a list handle the response code appropriately
                 elif (attempts < MAX_API_ATTEMPTS) :
-                    failed_point = point_list.pop(i)
-                    point_list.insert(i, failed_point)
+                    if (len(failed_point_list) > 0) :
+                        failed_point = failed_point_list.pop(i)
+                        failed_point_list.insert(i, failed_point)
+                    else :
+                        failed_point = point_list.pop(i)
+                        point_list.insert(i, failed_point)
+                        failed_point_list.append(failed_point)
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         # special behavior for 429 response code
                         if (result == 429 and not is_api_refreshed) :
@@ -194,14 +202,16 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
                             print(f"Maximum number of API calls made, please wait 60 seconds...", file=message_log)
                             time.sleep(60)
                             is_api_refreshed = True
-                            attempts += 1
                         # re-submit the thread
+                        # TODO attempt limit for non-API call limit related fails not implemented
                         new_thread = executor.submit(get_notams_at, failed_point, request_radius, message_log)
                         thread_list.append(new_thread)
                 else :
                     # if we go over the attempt limit
                     raise RuntimeError(f"Attempts to retry the failed API calls failed")
+                # remove the checked thread
                 thread_list.remove(request)
+        attempts += 1
 
     build_map(point_list)
     
