@@ -1,3 +1,4 @@
+import time
 import requests
 import json
 import os
@@ -20,6 +21,8 @@ DEFAULT_PATH_STEP_SIZE_NM = 40
 MAX_NOTAMS = 1000
 # radius around the flight path to get NOTAMs
 NOTAM_RADIUS = 25
+# max number of retries before quitting our program
+MAX_API_ATTEMPTS = 3
 # blank default parameters for the API
 NOTAM_REQUEST_PARAMS = {
     "pageSize" : str(MAX_NOTAMS),
@@ -99,8 +102,10 @@ def get_notams_at(request_location : PointObject, request_radius : int, message_
         if api_response.status_code == 404:
             raise RuntimeError( f"HTTP 404 return code from FAA API. Has the URL moved? Accessed url \"{FAA_API_ENTRYPOINT}\"" )
         if api_response.status_code == 429:
+            return api_response.status_code
             raise RuntimeError( f"HTTP 429 return code from FAA API. Your request limit has been reached, please wait 1 minute and try again." )
         if api_response.status_code != 200:
+            return api_response.status_code
             raise RuntimeError( f"Received non-HTTP 200 status code {api_response.status_code} from FAA API" )
 
         api_response_json = json.loads(api_response.text)
@@ -162,18 +167,40 @@ def get_notams_from_point_list(point_list : list, request_radius : int, message_
     # We start off with a set to avoid duplicate NOTAMs, 
     # but will convert and return a list, as sets cannot be sorted.
     notam_set = set()
-
+    attempts = 0
+    is_api_refreshed = False
     # Each request has a list of notams, so concatenate each thread's output into the notam list
     while len(thread_list) > 0:
         thread_list_copy = thread_list.copy()
 
         for i in range(len(thread_list_copy)):
             request = thread_list_copy[i]
-
             # Only check threads that are done.
             # Remove threads after retrieving their data.
             if(request.done()):
-                notam_set.update(request.result())
+                result = request.result()
+                # check for a valid return from the API
+                # if the return is invalid we return the response code
+                if (not isinstance(result, int)) :
+                    notam_set.update(result)
+                # if we get anything other than a list handle the response code appropriately
+                elif (attempts < MAX_API_ATTEMPTS) :
+                    failed_point = point_list.pop(i)
+                    point_list.insert(i, failed_point)
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        # special behavior for 429 response code
+                        if (result == 429 and not is_api_refreshed) :
+                            # wait for the API limit to refresh before calling it again
+                            print(f"Maximum number of API calls made, please wait 60 seconds...", file=message_log)
+                            time.sleep(60)
+                            is_api_refreshed = True
+                            attempts += 1
+                        # re-submit the thread
+                        new_thread = executor.submit(get_notams_at, failed_point, request_radius, message_log)
+                        thread_list.append(new_thread)
+                else :
+                    # if we go over the attempt limit
+                    raise RuntimeError(f"Attempts to retry the failed API calls failed")
                 thread_list.remove(request)
 
     build_map(point_list)
