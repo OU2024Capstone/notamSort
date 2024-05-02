@@ -2,6 +2,7 @@ class Notam:
 # Property names as they appear in the FAA API for an easier way to 
 # retreive specific properties without having to reference the FAA 
 # API for spelling/casing conventions.
+    ID="id"
     EFFECTIVE_START = "effectiveStart"
     EFFECTIVE_END = "effectiveEnd"
     TEXT = "text"
@@ -27,7 +28,7 @@ class Notam:
             The raw NOTAM response from the FAA API.
         """
         notam_properties = raw_notam_data.get("properties").get("coreNOTAMData").get("notam")
-
+        self.id = notam_properties.get(Notam.ID)
         self.effective_start = notam_properties.get(Notam.EFFECTIVE_START)
         self.effective_end = notam_properties.get(Notam.EFFECTIVE_END)
         self.text = notam_properties.get(Notam.TEXT)
@@ -44,20 +45,20 @@ class Notam:
         self.radius = notam_properties.get(Notam.RADIUS)
         self.selection_code = notam_properties.get(Notam.SELECTION_CODE)
 
-    # If two NOTAMs share the same number, they are considered to be the same NOTAM.
+    # If two NOTAMs share the same id, they are considered to be the same NOTAM.
     def __eq__(self, other):
         # Only compare other Notam objects
         if not isinstance(other, Notam):
-             return False;
-        return self.number == other.number
+             return False
+        return self.id == other.id
     
-    # The number attribute is chosen for the hash as it is a unique value.
+    # The id attribute is chosen for the hash as it is a unique value.
     def __hash__(self):
-            return hash(self.number)
+            return hash(self.ID)
         
     def __str__(self):
         """Returns a string representing the notam object in the form
-            [number] variable : value
+            [id] variable : value
 
         Can easily print a list of notams with print(*notam_list).
         """
@@ -65,7 +66,7 @@ class Notam:
         notam_vars = vars(self)
         output=""        
         for item in notam_vars:
-            output += f"[{self.number}] {item}: {notam_vars[item]}\n"
+            output += f"[{self.id}] {item}: {notam_vars[item]}\n"
         return output
     
     # To print NOTAMs in a list or set.
