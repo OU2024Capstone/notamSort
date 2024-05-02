@@ -86,7 +86,7 @@ class NotamTable(Table):
     Table can be made like so:
         table = NotamTable(all_notams)
     """
-
+    id = Col('ID')
     location = Col('Location')
     number = Col('Number')
     effective_start = Col('Effective Start')

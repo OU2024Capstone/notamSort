@@ -2,6 +2,7 @@ class Notam:
 # Property names as they appear in the FAA API for an easier way to 
 # retreive specific properties without having to reference the FAA 
 # API for spelling/casing conventions.
+    ID="id"
     EFFECTIVE_START = "effectiveStart"
     EFFECTIVE_END = "effectiveEnd"
     TEXT = "text"
@@ -27,7 +28,7 @@ class Notam:
             The raw NOTAM response from the FAA API.
         """
         notam_properties = raw_notam_data.get("properties").get("coreNOTAMData").get("notam")
-
+        self.id = notam_properties.get(Notam.ID)
         self.effective_start = notam_properties.get(Notam.EFFECTIVE_START)
         self.effective_end = notam_properties.get(Notam.EFFECTIVE_END)
         self.text = notam_properties.get(Notam.TEXT)
@@ -48,12 +49,12 @@ class Notam:
     def __eq__(self, other):
         # Only compare other Notam objects
         if not isinstance(other, Notam):
-             return False;
-        return self.number == other.number
+             return False
+        return self.id == other.id
     
     # The number attribute is chosen for the hash as it is a unique value.
     def __hash__(self):
-            return hash(self.number)
+            return hash(self.ID)
         
     def __str__(self):
         """Returns a string representing the notam object in the form
