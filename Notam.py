@@ -45,20 +45,20 @@ class Notam:
         self.radius = notam_properties.get(Notam.RADIUS)
         self.selection_code = notam_properties.get(Notam.SELECTION_CODE)
 
-    # If two NOTAMs share the same number, they are considered to be the same NOTAM.
+    # If two NOTAMs share the same id, they are considered to be the same NOTAM.
     def __eq__(self, other):
         # Only compare other Notam objects
         if not isinstance(other, Notam):
              return False
         return self.id == other.id
     
-    # The number attribute is chosen for the hash as it is a unique value.
+    # The id attribute is chosen for the hash as it is a unique value.
     def __hash__(self):
             return hash(self.ID)
         
     def __str__(self):
         """Returns a string representing the notam object in the form
-            [number] variable : value
+            [id] variable : value
 
         Can easily print a list of notams with print(*notam_list).
         """
@@ -66,7 +66,7 @@ class Notam:
         notam_vars = vars(self)
         output=""        
         for item in notam_vars:
-            output += f"[{self.number}] {item}: {notam_vars[item]}\n"
+            output += f"[{self.id}] {item}: {notam_vars[item]}\n"
         return output
     
     # To print NOTAMs in a list or set.
